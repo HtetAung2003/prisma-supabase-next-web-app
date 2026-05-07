@@ -1,124 +1,129 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { useTheme } from '@/lib/theme-provider';
-import { Button } from '@/components/ui/button';
-import Link from 'next/link';
+import { usePathname, useRouter } from "next/navigation";
+import {
+  BubbleChatNotificationIcon,
+  Home01Icon,
+  Menu01Icon,
+  Moon02Icon,
+  SearchVisualIcon,
+  Sun03Icon,
+} from "@hugeicons/core-free-icons";
 
-export function Navbar() {
-  const { theme, setTheme, isDark } = useTheme();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+import { Icon } from "@/components/Icon";
+import { useTheme } from "@/lib/theme-provider";
 
-  const navItems = [
-    { label: 'Home', href: '/' },
-    { label: 'About', href: '/about' },
-    { label: 'Services', href: '/services' },
-    { label: 'Contact', href: '/contact' },
-  ];
+const navItems = [
+  { label: "Overview", href: "/" },
+  { label: "Performance", href: "/analytics" },
+  { label: "Customers", href: "/customers" },
+];
+
+interface NavbarProps {
+  onMenuClick: () => void;
+}
+
+export function Navbar({ onMenuClick }: NavbarProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { setTheme, isDark } = useTheme();
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between">
-          {/* Logo/Brand */}
-          <div className="flex items-center gap-3">
-            <Link
-              href="/"
-              className="text-xl font-bold text-primary hover:text-primary/80 transition-colors"
-            >
-              AppLogo
-            </Link>
-          </div>
+    <nav className="sticky top-0 z-50 border-b border-border/70 bg-background/90 backdrop-blur-xl">
+      <div className="mx-auto flex h-16 w-full max-w-[1600px] items-center gap-3 px-4 sm:px-6 lg:px-8">
+        <button
+          type="button"
+          onClick={onMenuClick}
+          className="inline-flex size-10 items-center justify-center rounded-xl border border-border/70 bg-card text-foreground shadow-sm transition-colors hover:bg-accent lg:hidden"
+          aria-label="Open navigation"
+        >
+          <Icon icon={Menu01Icon} size={18} />
+        </button>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-1">
-            {navItems.map((item) => (
-              <Link
+        <button
+          type="button"
+          onClick={() => router.push("/")}
+          className="flex min-w-0 items-center gap-3 text-left"
+          aria-label="Go to home"
+        >
+          <span className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+            <Icon icon={Home01Icon} size={18} className="opacity-95" />
+          </span>
+          <span className="min-w-0">
+            <span className="block truncate text-sm font-semibold tracking-tight text-foreground">
+              Pulse OS
+            </span>
+            <span className="block truncate text-xs text-muted-foreground">
+              Operations command center
+            </span>
+          </span>
+        </button>
+
+        <div className="hidden items-center gap-1 rounded-2xl border border-border/70 bg-card/80 p-1 shadow-sm lg:flex">
+          {navItems.map((item) => {
+            const isActive = pathname === item.href;
+
+            return (
+              <button
                 key={item.href}
-                href={item.href}
-                className="px-3 py-2 rounded-md text-sm font-medium text-foreground hover:bg-muted transition-colors"
+                type="button"
+                onClick={() => router.push(item.href)}
+                className={`rounded-xl px-3 py-2 text-sm font-medium transition-colors ${
+                  isActive
+                    ? "bg-accent text-foreground"
+                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                }`}
               >
                 {item.label}
-              </Link>
-            ))}
-          </div>
-
-          {/* Right Actions */}
-          <div className="flex items-center gap-2">
-            {/* Theme Toggle */}
-            <button
-              onClick={() => {
-                setTheme(isDark ? 'light' : 'dark');
-              }}
-              className="inline-flex items-center justify-center rounded-md border border-border bg-background p-2 text-sm font-medium text-foreground hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              aria-label="Toggle theme"
-            >
-              {isDark ? (
-                <svg
-                  className="h-5 w-5"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M12 3v1m0 16v1m9-9h-1m-16 0H1m15.364 1.636l.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-              ) : (
-                <svg
-                  className="h-5 w-5"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-                </svg>
-              )}
-            </button>
-
-            {/* Mobile Menu Button */}
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden inline-flex items-center justify-center rounded-md border border-border bg-background p-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"
-              aria-label="Toggle menu"
-            >
-              <svg
-                className="h-5 w-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                {mobileMenuOpen ? (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                ) : (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                )}
-              </svg>
-            </button>
-          </div>
+              </button>
+            );
+          })}
         </div>
 
-        {/* Mobile Menu */}
-        {mobileMenuOpen && (
-          <div className="md:hidden border-t border-border py-4 space-y-2">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="block px-3 py-2 rounded-md text-sm font-medium text-foreground hover:bg-muted transition-colors"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {item.label}
-              </Link>
-            ))}
+        <div className="ml-auto flex items-center gap-2">
+          <div className="hidden min-w-[260px] items-center gap-2 rounded-2xl border border-border/70 bg-card/80 px-3 py-2 text-sm text-muted-foreground shadow-sm md:flex">
+            <Icon icon={SearchVisualIcon} size={17} className="opacity-70" />
+            <span className="truncate">Search people, orders, or inventory</span>
+            <span className="ml-auto rounded-md bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+              /
+            </span>
           </div>
-        )}
+
+          <button
+            type="button"
+            className="inline-flex size-10 items-center justify-center rounded-xl border border-border/70 bg-card text-foreground shadow-sm transition-colors hover:bg-accent"
+            aria-label="Notifications"
+          >
+            <Icon icon={BubbleChatNotificationIcon} size={18} />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setTheme(isDark ? "light" : "dark")}
+            className="inline-flex size-10 items-center justify-center rounded-xl border border-border/70 bg-card text-foreground shadow-sm transition-colors hover:bg-accent"
+            aria-label="Toggle theme"
+          >
+            <Icon icon={isDark ? Sun03Icon : Moon02Icon} size={18} />
+          </button>
+
+          <button
+            type="button"
+            className="hidden items-center gap-3 rounded-2xl border border-border/70 bg-card px-2 py-1.5 shadow-sm sm:flex"
+            aria-label="Profile"
+          >
+            <span className="flex size-8 items-center justify-center rounded-xl bg-[color:var(--color-chart-1)]/50 text-sm font-semibold text-foreground">
+              AJ
+            </span>
+            <span className="hidden text-left lg:block">
+              <span className="block text-sm font-medium text-foreground">
+                Ava Johnson
+              </span>
+              <span className="block text-xs text-muted-foreground">
+                Growth Lead
+              </span>
+            </span>
+          </button>
+        </div>
       </div>
     </nav>
   );
