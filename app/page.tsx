@@ -6,7 +6,7 @@ export default function Home() {
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-foreground mb-2">Welcome to Dashboard</h1>
         <p className="text-lg text-muted-foreground">
-          This is a sample dashboard with navbar and sidebar
+          This is a sample dashboard with navbar and sidebar ...
         </p>
       </div>
 
