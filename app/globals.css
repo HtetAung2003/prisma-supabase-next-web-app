@@ -134,3 +134,6 @@
     @apply font-sans;
   }
 }
+body , html , #root {
+height : 100%;
+}
