@@ -9,6 +9,7 @@ const CreateModelForm = () => {
     const {mutateAsync : CreateModelMutation} = useMutation({
         mutationFn: create,
         onSuccess: () => {    
+            queryClient.invalidateQueries({queryKey: ["models"]});
             toast.success("Model created successfully");     
         },
         onError: (error) => {
