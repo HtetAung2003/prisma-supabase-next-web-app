@@ -3,7 +3,7 @@
 "use client";
 
 import { Icon } from './Icon';
-import { DashboardCircleAddIcon, LibraryFreeIcons, PlayCircleIcon, TimeScheduleFreeIcons } from '@hugeicons/core-free-icons';
+import { DashboardCircleAddIcon, LibraryFreeIcons, PlayCircleIcon, TimeScheduleFreeIcons, TypeCursorIcon } from '@hugeicons/core-free-icons';
 import { usePathname, useRouter } from 'next/navigation'; 
  const sidebarItems = [   
   {
@@ -15,9 +15,9 @@ import { usePathname, useRouter } from 'next/navigation';
   },
   {
     id :2,
-    item : "Library",
-    path : "/library",
-    Icon : LibraryFreeIcons
+    item : "categories",
+    path : "/categories",
+    Icon : TypeCursorIcon
   },
   {
     id :3,
