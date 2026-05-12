@@ -45,7 +45,7 @@ export const create = async (formData: FormData) => {
         }
 
         // save database
-        await db.categories.create({
+        await db.category.create({
             data: {
                 name: name.trim(),
                 image: imageUrl,

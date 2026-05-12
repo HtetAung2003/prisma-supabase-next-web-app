@@ -1,8 +1,8 @@
-import { Categories } from '@/lib/generated/prisma/client';
+import { Category } from '@/lib/generated/prisma/client';
 import CategoryCard from './CategoryCard';
 
 interface CategoriesListProps {
-  categories?: Categories[];
+  categories?: Category[];
   searchQuery?: string;
 }
 

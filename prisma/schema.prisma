@@ -19,20 +19,126 @@ model Model {
   updatedAt DateTime @updatedAt
 }
 
-model Categories {
-  id           Int          @id @default(autoincrement())
-  name         String       @unique
-  image        String?
-  phoneModels  PhoneModel[]
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+model Category {
+  id            Int            @id @default(autoincrement())
+
+  name          String         @unique
+  image         String?
+
+  products      Product[]
+
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 }
 
-model PhoneModel {
-  id          Int        @id @default(autoincrement())
-  name        String     @unique
-  categories  Categories @relation(fields: [categoryId], references: [id])
-  categoryId  Int
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+model Brand {
+  id            Int            @id @default(autoincrement())
+
+  name          String         @unique
+
+  logo          String?
+
+  products      Product[]
+
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model Product {
+  id            Int            @id @default(autoincrement())
+
+  name          String
+
+  description   String?
+
+  // relations
+  category      Category       @relation(fields: [categoryId], references: [id])
+  categoryId    Int
+
+  brand         Brand          @relation(fields: [brandId], references: [id])
+  brandId       Int
+
+  // relations
+  variants      ProductVariant[]
+
+  images        ProductImage[]
+
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@unique([name, brandId])
+}
+
+model ProductVariant {
+  id               Int              @id @default(autoincrement())
+
+  // variant fields
+  ram              Int?
+  storage          Int?
+
+  color            String?
+
+  // pricing
+  price            Decimal          @db.Decimal(10,2)
+
+  // inventory
+  stockQty         Int              @default(0)
+
+  // preorder
+  isPreorder       Boolean          @default(false)
+
+  // status
+  status           ProductStatus    @default(IN_STOCK)
+
+  // relations
+  product          Product          @relation(fields: [productId], references: [id])
+  productId        Int
+
+  discounts        Discount[]
+
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+}
+
+model ProductImage {
+  id               Int             @id @default(autoincrement())
+
+  imageUrl         String
+
+  product          Product         @relation(fields: [productId], references: [id])
+  productId        Int
+
+  createdAt        DateTime        @default(now())
+}
+
+model Discount {
+  id               Int              @id @default(autoincrement())
+
+  name             String
+
+  discountType     DiscountType
+
+  discountValue    Decimal          @db.Decimal(10,2)
+
+  startDate        DateTime?
+  endDate          DateTime?
+
+  isActive         Boolean          @default(true)
+
+  productVariant   ProductVariant   @relation(fields: [productVariantId], references: [id])
+  productVariantId Int
+
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+}
+
+enum ProductStatus {
+  IN_STOCK
+  OUT_OF_STOCK
+  PREORDER
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED
 }

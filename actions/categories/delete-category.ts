@@ -3,5 +3,5 @@
 import { db } from '@/lib/db';
 
 export const delCategory = async (id: number) => {
-  await db.categories.delete({ where: { id } });
+  await db.category.delete({ where: { id } });
 };

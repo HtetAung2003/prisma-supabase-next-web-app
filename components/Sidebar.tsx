@@ -15,7 +15,7 @@ import { usePathname, useRouter } from 'next/navigation';
   },
   {
     id :2,
-    item : "categories",
+    item : "Categories",
     path : "/categories",
     Icon : TypeCursorIcon
   },

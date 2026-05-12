@@ -1,6 +1,6 @@
 "use client";
 
-import { Categories } from '@/lib/generated/prisma/client';
+// import { Categories } from '@/lib/generated/prisma/client';
 import { Icon } from '@/components/Icon';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,9 +10,10 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { EllipseSelectionFreeIcons } from '@hugeicons/core-free-icons';
 import React, { useState } from 'react';
+import { Category } from '@/lib/generated/prisma/client';
 
 interface CategoryCardProps {
-  category: Categories;
+  category: Category;
 }
 
 const CategoryCard = ({ category }: CategoryCardProps) => {

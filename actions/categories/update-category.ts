@@ -7,7 +7,7 @@ export const updateCategory = async ({ id, name }: { id: number; name: string })
     throw new Error('Category name is required');
   }
 
-  await db.categories.update({
+  await db.category.update({
     where: { id },
     data: { name: name.trim() },
   });
