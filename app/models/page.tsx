@@ -1,4 +1,5 @@
 'use client';
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import ModelsList from "./_components/ModelsList";
 import Navbar from "./_components/Navbar";
@@ -6,6 +7,7 @@ import { get } from "@/actions/get-models";
 
 
 const ModelsPage = () => {
+  const [searchQuery, setSearchQuery] = useState("");
   const { data: models, isLoading, isError } = useQuery({
     queryFn: get,
     queryKey: ["models"],
@@ -13,7 +15,7 @@ const ModelsPage = () => {
 
   return (
     <div className="p-5 space-y-5">
-      <Navbar />
+      <Navbar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
       {isLoading ? (
         <div className="rounded-lg border border-border bg-card p-6 text-center text-sm text-muted-foreground">
           Loading models...
