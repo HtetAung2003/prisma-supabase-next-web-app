@@ -1,4 +1,4 @@
-import CreateCategoryForm from "@/app/categories/_components/CreateCategoryForm";
+import CreateForm from "@/components/CreateForm";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -8,7 +8,10 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-const CreateCategoryDialog = () => {
+interface CreateDialogProps {
+  entityName: string;
+}
+const CreateDialog = ({ entityName }: CreateDialogProps) => {
   return (
     <Dialog>
       <DialogTrigger>
@@ -17,20 +20,20 @@ const CreateCategoryDialog = () => {
           size="xs"
           className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-sm transition-all duration-200 hover:shadow-md h-10"
         >
-          Create Category
+          Create {entityName}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg bg-neutral-900 border-none shadow-md">
         <DialogHeader>
-          Create New Category
+          Create New {entityName}
           <DialogDescription>
-            Add a new category with a name and optional photo.
+            Add a new {entityName.toLowerCase()} with a name and optional photo.
           </DialogDescription>
         </DialogHeader>
-        <CreateCategoryForm />
+        <CreateForm entityName={entityName} />
       </DialogContent>
     </Dialog>
   );
 };
 
-export default CreateCategoryDialog;
+export default CreateDialog;

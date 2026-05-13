@@ -10,7 +10,9 @@ const ContentLayout = ({children}: {children: React.ReactNode}) => {
             <Sidebar visible={visible} />
             <div className="rounded-[28px] border border-border/70  w-full h-full bg-card">
       <Navbar visible={visible} setVisible={setVisible}/>  
+      <div className="p-5">
        {children}
+      </div>
             </div>
             </div>
   );

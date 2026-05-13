@@ -12,47 +12,62 @@ import { EllipseSelectionFreeIcons } from '@hugeicons/core-free-icons';
 import React, { useState } from 'react';
 import { Category } from '@/lib/generated/prisma/client';
 
-interface CategoryCardProps {
-  category: Category;
-}
+type ListItem = {
+  id: number;
+  name: string;
+  image?: string;
+  updatedAt?: Date;
+  createdAt?: Date;
+};
 
-const CategoryCard = ({ category }: CategoryCardProps) => {
+interface CategoryCardProps {
+  item: ListItem;
+  title?: string;
+}
+const CategoryCard = ({ item, title }: CategoryCardProps) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [name, setName] = useState(category.name);
+  const [name, setName] = useState(item.name);
   const queryClient = useQueryClient();
 
-  const updateCategoryMutation = useMutation<void, Error, { id: number; name: string }>({
+  const updateCategoryMutation = useMutation({
     mutationFn: updateCategory,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
-      toast.success('Category updated successfully');
+      toast.success('Updated successfully');
       setIsEditing(false);
     },
     onError: (error) => {
-      toast.error('Failed to update category: ' + (error as Error).message);
+      toast.error('Failed: ' + (error as Error).message);
     },
   });
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
     if (!name.trim()) {
-      toast.error('Category name is required');
+      toast.error('Name is required');
       return;
     }
-    await updateCategoryMutation.mutateAsync({ id: category.id, name: name.trim() });
+
+    await updateCategoryMutation.mutateAsync({
+      id: item.id,
+      name: name.trim(),
+    });
   };
 
-  const formattedDate = category.updatedAt
-    ? new Date(category.updatedAt).toLocaleDateString()
-    : new Date(category.createdAt).toLocaleDateString();
+  const formattedDate = item.updatedAt
+    ? new Date(item.updatedAt).toLocaleDateString()
+    : item.createdAt
+    ? new Date(item.createdAt).toLocaleDateString()
+    : '';
 
   return (
     <article className="group overflow-hidden rounded-3xl border border-white/10 bg-slate-950 shadow-2xl shadow-slate-950/20 transition hover:-translate-y-1 hover:border-white/20">
       <div className="relative overflow-hidden bg-slate-900">
-        {category.image ? (
+        {item.image ? (
           <img
-            src={category.image}
-            alt={category.name}
+            src={item.image}
+            alt={item.name}
             className="h-52 w-full object-cover transition duration-300 ease-out group-hover:scale-105"
           />
         ) : (
@@ -64,28 +79,28 @@ const CategoryCard = ({ category }: CategoryCardProps) => {
           </div>
         )}
         <div className="absolute right-3 top-3 z-10">
-          <MenuDropdownCategory categoryId={category.id} setIsEditing={setIsEditing} />
+          <MenuDropdownCategory categoryId={item.id} setIsEditing={setIsEditing} />
         </div>
       </div>
 
       <div className="space-y-3 p-5">
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-1">
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">Category</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">{title?.toUpperCase()}</p>
             {isEditing ? (
               <form onSubmit={handleSubmit} className="flex items-center gap-2">
                 <Input
                   value={name}
                   onChange={(event) => setName(event.target.value)}
                   className="min-w-0 bg-slate-900 text-white"
-                  aria-label="Edit category name"
+                  aria-label={`Edit ${title?.toLowerCase() || 'category'} name`}
                 />
                 <Button type="submit" className="h-10 px-3">
                   Save
                 </Button>
               </form>
             ) : (
-              <h2 className="text-xl font-semibold text-white">{category.name}</h2>
+              <h2 className="text-xl font-semibold text-white">{item.name}</h2>
             )}
           </div>
         </div>
@@ -93,7 +108,7 @@ const CategoryCard = ({ category }: CategoryCardProps) => {
         <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-slate-400">
           <span>Updated {formattedDate}</span>
           <span className="rounded-full border border-slate-700 px-3 py-1 text-xs uppercase tracking-[0.18em] text-slate-500">
-            {category.image ? 'Photo' : 'No image'}
+            {item.image ? 'Photo' : 'No image'}
           </span>
         </div>
       </div>

@@ -21,8 +21,8 @@ import { usePathname, useRouter } from 'next/navigation';
   },
   {
     id :3,
-    item : "Schedule",
-    path : "/schedule",
+    item : "Brands",
+    path : "/brands",
     Icon : TimeScheduleFreeIcons
   },
   {

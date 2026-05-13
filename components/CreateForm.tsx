@@ -8,21 +8,38 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 // import { create } from "@/actions/categories/create-cateogries";
 import { toast } from "sonner";
 import { create } from "@/actions/categories/create-cateogries";
-import { log } from "console";
+import { createbrand } from "@/actions/brands/create-brands";
 
-const CreateCategoryForm = () => {
-    const queryClient = useQueryClient();
-    const {mutateAsync : CreateCategoryMutation} = useMutation({
-        mutationFn : create,
-        onSuccess : () => {
-            queryClient.invalidateQueries({queryKey: ["categories"]});
-            toast.success("Category created successfully");
-        },
-         onError: (error) => {
-            toast.error("Failed to create model: " + (error as Error).message);
-        }
+interface CreateFormProps {
+  entityName: string;
+}
+const CreateForm = ({ entityName }: CreateFormProps) => {
+  const queryClient = useQueryClient();
+  const isCategory = entityName.toLowerCase() === "category";
+  const entityLabel = entityName;
 
-    })
+  const { mutateAsync: CreateCategoryMutation } = useMutation({
+    mutationFn: create,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+      toast.success("Category created successfully");
+    },
+    onError: (error) => {
+      toast.error("Failed to create category: " + (error as Error).message);
+    },
+  });
+
+  const { mutateAsync: CreateBrandMutation } = useMutation({
+    mutationFn: createbrand,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["brands"] });
+      toast.success("Brand created successfully");
+    },
+    onError: (error) => {
+      toast.error("Failed to create brand: " + (error as Error).message);
+    },
+  });
+
   const [preview, setPreview] = useState<string | null>(null);
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -37,30 +54,30 @@ const CreateCategoryForm = () => {
     setPreview(imageUrl);
   };
 
-  const handleSubmit = async(e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     const form = e.currentTarget;
     const formData = new FormData(form);
-    console.log("FormData entries:",formData);
     const name = formData.get("name") as string;
-    const photo = formData.get("photo") as File | null;
 
     if (!name?.trim()) {
-      alert("Category name is required");
+      alert(`${entityLabel} name is required`);
       return;
     }
-    try {
-    await CreateCategoryMutation(formData);
-    
-  console.log("Category created successfully", { name, photo });
-    form.reset();
-    if (setPreview) setPreview(null); 
-    
-  } catch (error) {
 
-    console.error("Submission failed:", error);
-  }
+    try {
+      if (isCategory) {
+        await CreateCategoryMutation(formData);
+      } else {
+        await CreateBrandMutation(formData);
+      }
+
+      form.reset();
+      setPreview(null);
+    } catch (error) {
+      console.error("Submission failed:", error);
+    }
   };
 
   return (
@@ -74,7 +91,7 @@ const CreateCategoryForm = () => {
           id="name"
           name="name"
           type="text"
-          placeholder="Category name"
+          placeholder={`${entityLabel} name`}
           autoComplete="off"
         />
       </div>
@@ -94,6 +111,7 @@ const CreateCategoryForm = () => {
 
         {preview && (
           <div className="mt-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={preview}
               alt="Preview"
@@ -104,10 +122,10 @@ const CreateCategoryForm = () => {
       </div>
 
       <Button type="submit" variant="default" className="w-full">
-        Create Category
+        Create {entityLabel}
       </Button>
     </form>
   );
 };
 
-export default CreateCategoryForm;
+export default CreateForm;

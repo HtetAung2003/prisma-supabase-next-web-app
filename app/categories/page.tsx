@@ -17,7 +17,8 @@ export default function CategoryList() {
 
     return (
         <>  
-       <Navbar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+
+       <Navbar searchQuery={searchQuery} setSearchQuery={setSearchQuery} title="Categories" entityName="Category" />
           {/* <ul>
             {categories?.map((cat) => (
                 <li key={cat.id}>{cat.name}</li>
@@ -32,7 +33,7 @@ export default function CategoryList() {
           Unable to load categories.
         </div>
       ) : (
-        <CategoriesList categories={categories} searchQuery={searchQuery} />
+        <CategoriesList items={categories} searchQuery={searchQuery} title="Categories" />
        
       )}
         </>
