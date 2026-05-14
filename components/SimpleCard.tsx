@@ -4,8 +4,8 @@
 import { Icon } from '@/components/Icon';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import MenuDropdownCategory from './MenuDropdownCategory';
-import { updateCategory } from '../../../actions/categories/update-category';
+import MenuDropdownCategory from '../app/categories/_components/MenuDropdownCategory';
+import { updateCategory } from '../actions/categories/update-category';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { EllipseSelectionFreeIcons } from '@hugeicons/core-free-icons';
@@ -16,15 +16,16 @@ type ListItem = {
   id: number;
   name: string;
   image?: string;
+  logo?: string;
   updatedAt?: Date;
   createdAt?: Date;
 };
 
-interface CategoryCardProps {
+interface SimpleCardProps {
   item: ListItem;
   title?: string;
 }
-const CategoryCard = ({ item, title }: CategoryCardProps) => {
+const SimpleCard = ({ item, title }: SimpleCardProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(item.name);
   const queryClient = useQueryClient();
@@ -64,9 +65,9 @@ const CategoryCard = ({ item, title }: CategoryCardProps) => {
   return (
     <article className="group overflow-hidden rounded-3xl border border-white/10 bg-slate-950 shadow-2xl shadow-slate-950/20 transition hover:-translate-y-1 hover:border-white/20">
       <div className="relative overflow-hidden bg-slate-900">
-        {item.image ? (
+        {item.image || item.logo ? (
           <img
-            src={item.image}
+            src={item.image || item.logo}
             alt={item.name}
             className="h-52 w-full object-cover transition duration-300 ease-out group-hover:scale-105"
           />
@@ -108,7 +109,7 @@ const CategoryCard = ({ item, title }: CategoryCardProps) => {
         <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-slate-400">
           <span>Updated {formattedDate}</span>
           <span className="rounded-full border border-slate-700 px-3 py-1 text-xs uppercase tracking-[0.18em] text-slate-500">
-            {item.image ? 'Photo' : 'No image'}
+            {item.image ? 'Photo' : item.logo ? 'Logo' : 'No image'}
           </span>
         </div>
       </div>
@@ -116,4 +117,4 @@ const CategoryCard = ({ item, title }: CategoryCardProps) => {
   );
 };
 
-export default CategoryCard;
+export default SimpleCard;

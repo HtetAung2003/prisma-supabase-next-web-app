@@ -3,7 +3,7 @@
 "use client";
 
 import { Icon } from './Icon';
-import { DashboardCircleAddIcon, LibraryFreeIcons, PlayCircleIcon, TimeScheduleFreeIcons, TypeCursorIcon } from '@hugeicons/core-free-icons';
+import { DashboardCircleAddIcon, LibraryFreeIcons, Package01FreeIcons, PlayCircleIcon, ProductLoadingFreeIcons, TimeScheduleFreeIcons, TypeCursorIcon } from '@hugeicons/core-free-icons';
 import { usePathname, useRouter } from 'next/navigation'; 
  const sidebarItems = [   
   {
@@ -27,9 +27,15 @@ import { usePathname, useRouter } from 'next/navigation';
   },
   {
     id :4,
-    item : "Exercise Zone",
-    path : "/exercise",
-    Icon : PlayCircleIcon
+    item : "Products",
+    path : "/products",
+    Icon : ProductLoadingFreeIcons
+  },
+  {
+      id :5,
+    item : "Create Product",
+    path : "/products/create-product",
+    Icon : Package01FreeIcons
   }
  ]
 interface SidebarProps {

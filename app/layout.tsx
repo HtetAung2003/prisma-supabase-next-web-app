@@ -9,7 +9,7 @@ import ContentLayout from "@/components/ContentLayout";
 import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
-  title: "Pulse OS",
+  title: "Unique",
   description: "Operations dashboard for products, orders, and team activity.",
 };
 

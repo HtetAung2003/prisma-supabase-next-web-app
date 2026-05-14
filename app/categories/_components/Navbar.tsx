@@ -4,6 +4,8 @@ import { Icon } from "@/components/Icon";
 import { Input } from "@/components/ui/input";
 import { Search } from "@hugeicons/core-free-icons";
 import CreateDialog from "@/components/CreateDialog";
+import CreateProductDialog from "@/app/products/_components/CreateProductDialog";
+import CreateProduct from "@/app/products/_components/CreateProductDialog";
 
 interface NavbarProps {
   searchQuery: string;
@@ -28,7 +30,14 @@ const Navbar = ({ searchQuery, setSearchQuery, title, entityName }: NavbarProps)
                 onChange={(e) => setSearchQuery(e.target.value)}
             />
         </div> 
-        <CreateDialog entityName={entityName} />
+        {
+          title == "Products" ? (
+            <CreateProduct entityName={entityName} />
+          ) : (
+             <CreateDialog entityName={entityName} />
+          )
+        }
+     
         </div>
       
    

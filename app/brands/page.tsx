@@ -3,7 +3,8 @@ import React, { useState } from 'react';
 import Navbar from '../categories/_components/Navbar';
 import { getbrand } from '@/actions/brands/get-brands';
 import { useQuery } from '@tanstack/react-query';
-import CategoriesList from '../categories/_components/CategoriesList';
+import SimpleList from '../../components/SimpleList';
+import Loader from '@/components/ui/Loader';
 
 const BrandsPage = () => {
     const [searchQuery, setSearchQuery] = useState("");
@@ -12,7 +13,6 @@ const BrandsPage = () => {
         queryFn: () => getbrand(), // Wrap it in an anonymous function
     });
 
-    if (isLoading) return <div>Loading...</div>;
     if (isError) return <div>Error: {JSON.stringify(error)}</div>;
 
     return (
@@ -24,18 +24,18 @@ const BrandsPage = () => {
             ))}
         </ul> */}
          {isLoading ? (
-        <div className="rounded-lg border border-border bg-card p-6 text-center text-sm text-muted-foreground">
-          Loading brands...
-        </div>
+       <div className="flex min-h-screen items-center justify-center">
+  <div className="rounded-lg border border-border bg-card p-6 text-sm text-muted-foreground">
+    <Loader />
+  </div>
+</div>
       ) : isError ? (
         <div className="rounded-lg border border-border bg-card p-6 text-center text-sm text-destructive">
           Unable to load brands.
         </div>
       ) : (
-        <CategoriesList items={brands} title="Brands" searchQuery={searchQuery} />
-       
+        <SimpleList items={brands} title="Brands" searchQuery={searchQuery} />
       )}
       </>
-    );
-}
+    );}
 export default BrandsPage;

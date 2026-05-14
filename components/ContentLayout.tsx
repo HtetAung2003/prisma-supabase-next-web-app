@@ -8,9 +8,9 @@ const ContentLayout = ({children}: {children: React.ReactNode}) => {
   return (
   <div className="flex h-full p-5 gap-5 bg-background">
             <Sidebar visible={visible} />
-            <div className="rounded-[28px] border border-border/70  w-full h-full bg-card">
+            <div className="rounded-[28px] border border-border/70 flex flex-col w-full h-full bg-card">
       <Navbar visible={visible} setVisible={setVisible}/>  
-      <div className="p-5">
+      <div className="overflow-hidden  p-5">
        {children}
       </div>
             </div>

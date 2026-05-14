@@ -3,7 +3,8 @@ import { useState } from "react";
 import { getCategory } from "@/actions/categories/get-categories";
 import { useQuery } from "@tanstack/react-query";
 import  Navbar  from "../categories/_components/Navbar";
-import CategoriesList from "./_components/CategoriesList";
+import SimpleList from "../../components/SimpleList";
+import Loader from "@/components/ui/Loader";
 
 export default function CategoryList() {
     const [searchQuery, setSearchQuery] = useState("");
@@ -12,7 +13,7 @@ export default function CategoryList() {
         queryFn: () => getCategory(), // Wrap it in an anonymous function
     });
 
-    if (isLoading) return <div>Loading...</div>;
+  
     if (isError) return <div>Error: {JSON.stringify(error)}</div>;
 
     return (
@@ -25,15 +26,17 @@ export default function CategoryList() {
             ))}
         </ul> */}
          {isLoading ? (
-        <div className="rounded-lg border border-border bg-card p-6 text-center text-sm text-muted-foreground">
-          Loading categories...
-        </div>
+        <div className="flex min-h-screen items-center justify-center">
+  <div className="rounded-lg border border-border bg-card p-6 text-sm text-muted-foreground">
+    <Loader />
+  </div>
+</div>
       ) : isError ? (
         <div className="rounded-lg border border-border bg-card p-6 text-center text-sm text-destructive">
           Unable to load categories.
         </div>
       ) : (
-        <CategoriesList items={categories} searchQuery={searchQuery} title="Categories" />
+        <SimpleList items={categories} searchQuery={searchQuery} title="Categories" />
        
       )}
         </>
