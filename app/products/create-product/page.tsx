@@ -1,10 +1,9 @@
 import React from 'react';
+import CreateProductForm from '../_components/CreateProductForm';
 
 const page = () => {
     return(
-        <>
-            ddd
-        </>
+     <CreateProductForm/>
     )
 }
 export default page;

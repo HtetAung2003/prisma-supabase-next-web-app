@@ -30,13 +30,10 @@ const Navbar = ({ searchQuery, setSearchQuery, title, entityName }: NavbarProps)
                 onChange={(e) => setSearchQuery(e.target.value)}
             />
         </div> 
-        {
-          title == "Products" ? (
-            <CreateProduct entityName={entityName} />
-          ) : (
+     
              <CreateDialog entityName={entityName} />
-          )
-        }
+     
+      
      
         </div>
       

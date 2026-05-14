@@ -73,11 +73,14 @@ model ProductVariant {
   id               Int              @id @default(autoincrement())
 
   color            String?
-
-  price            Decimal          @db.Decimal(10,2)
+  sku              String?          @unique
+  barcode          String?          @unique
+  // pricing
+  buyPrice         Decimal          @db.Decimal(10,2)
+  sellPrice        Decimal          @db.Decimal(10,2)
 
   stockQty         Int              @default(0)
-
+ lowStockAlert    Int?   
   isPreorder       Boolean          @default(false)
 
   status           ProductStatus    @default(IN_STOCK)
@@ -92,6 +95,7 @@ model ProductVariant {
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 }
+
 model ProductSpecification {
   id                Int              @id @default(autoincrement())
 
