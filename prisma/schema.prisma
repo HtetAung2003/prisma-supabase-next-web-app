@@ -61,7 +61,7 @@ model Product {
   // relations
   variants      ProductVariant[]
 
-  images        ProductImage[]
+
 
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
@@ -70,30 +70,48 @@ model Product {
 }
 
 model ProductVariant {
-  id               Int              @id @default(autoincrement())
+  id            Int      @id @default(autoincrement())
 
-  color            String?
-  sku              String?          @unique
-  barcode          String?          @unique
-  // pricing
-  buyPrice         Decimal          @db.Decimal(10,2)
-  sellPrice        Decimal          @db.Decimal(10,2)
+  // ───── Variant Identity ─────
+  color         String?
+  size          String?
+  material      String?
+  sku           String?  @unique
+  barcode       String?  @unique
+  variantName   String?  // e.g. "iPhone 15 Pro - Blue 256GB"
 
-  stockQty         Int              @default(0)
- lowStockAlert    Int?   
-  isPreorder       Boolean          @default(false)
+  // ───── Pricing ─────
+  costPrice     Decimal? @db.Decimal(10,2)
+  buyPrice      Decimal  @db.Decimal(10,2)
+  sellPrice     Decimal  @db.Decimal(10,2)
+  currency      String   @default("MMK")
 
-  status           ProductStatus    @default(IN_STOCK)
-  productId        Int
+  // ───── Inventory ─────
+  stockQty      Int      @default(0)
+  reservedQty   Int      @default(0) // holds stock for pending orders
+  reorderLevel  Int?     // low stock alert threshold
+  maxStock      Int?     // optional stock limit
+
+  isPreorder    Boolean  @default(false)
+
+  // ───── Status ─────
+  status        ProductStatus @default(IN_STOCK)
+  purchaseStatus PurchaseStatus @default(PENDING)
+
+  // ───── Analytics (lightweight only) ─────
+  lastSoldAt    DateTime?
+
+  // ───── Relations ─────
+  productId     Int
   product       Product @relation(fields: [productId], references: [id])
 
+  images        ProductImage[]
+  specifications ProductSpecification[]
+  discounts     Discount[]
 
-  specifications   ProductSpecification[]
-
-  discounts        Discount[]
-
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
+  // ───── Timestamps ─────
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
 model ProductSpecification {
@@ -112,9 +130,9 @@ model ProductImage {
 
   imageUrl         String
 
-  product          Product         @relation(fields: [productId], references: [id])
-  productId        Int
 
+  productVariant   ProductVariant? @relation(fields: [productVariantId], references: [id])
+  productVariantId Int?
   createdAt        DateTime        @default(now())
 }
 
@@ -144,7 +162,11 @@ enum ProductStatus {
   OUT_OF_STOCK
   PREORDER
 }
-
+enum PurchaseStatus {
+  PENDING
+  PURCHASED
+  CANCELLED
+}
 enum DiscountType {
   PERCENTAGE
   FIXED

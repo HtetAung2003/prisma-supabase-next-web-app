@@ -1,17 +1,29 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import Image from 'next/image';
+import React, { useEffect, useRef, useState } from 'react';
 import { getbrand } from '@/actions/brands/get-brands';
 import { getCategory } from '@/actions/categories/get-categories';
-
-import { log } from 'node:console';
 import { createProduct } from '@/actions/products/create-products';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardAction, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Card,
+  CardAction,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 type Brand = { id: number; name: string };
@@ -22,289 +34,925 @@ type Spec = {
   value: string;
 };
 
-type Variant = {
-  color: string;
-  price: number;
-  stockQty: number;
-  specifications: Spec[];
+type ImagePreview = {
+  file: File;
+  url: string;
 };
 
+type VariantStatus = 'IN_STOCK' | 'PREORDER';
+type PurchaseStatus = 'PENDING' | 'PURCHASED';
+
+type Variant = {
+  color: string;
+  sku: string;
+  barcode: string;
+  stockQty: number;
+  reorderLevel: number;
+  maxStock: number;
+  reservedQty: number;
+  buyPrice: number;
+  sellPrice: number;
+  status: VariantStatus;
+  purchaseStatus: PurchaseStatus;
+  specifications: Spec[];
+  images: (ImagePreview | null)[];
+};
+
+const DEFAULT_IMAGE_SLOTS = [null, null, null, null] as const;
+
+const createEmptyVariant = (): Variant => ({
+  color: '',
+  sku: '',
+  barcode: '',
+  stockQty: 1,
+  reorderLevel: 0,
+  maxStock: 2,
+  reservedQty: 0,
+  buyPrice: 0,
+  sellPrice: 0,
+  status: 'IN_STOCK',
+  purchaseStatus: 'PENDING',
+  specifications: [],
+  images: [...DEFAULT_IMAGE_SLOTS],
+});
+
+const cloneSpecifications = (specifications: Spec[]) =>
+  specifications.map((spec) => ({ ...spec }));
+
+const cloneImages = (images: (ImagePreview | null)[]) =>
+  images.map((image) => (image ? { ...image } : null));
+
+const createCopiedVariant = (variant: Variant): Variant => ({
+  ...variant,
+  specifications: cloneSpecifications(variant.specifications),
+  images: cloneImages(variant.images),
+});
+
+const normalizeVariant = (variant: Variant): Variant => {
+  const stockQty = Math.max(0, Math.trunc(variant.stockQty || 0));
+  const reorderLevel = Math.min(
+    Math.max(0, Math.trunc(variant.reorderLevel || 0)),
+    Math.max(stockQty - 1, 0)
+  );
+  const baselineMax = Math.max(stockQty, reorderLevel) + 1;
+  const maxStock = Math.max(Math.trunc(variant.maxStock || 0), baselineMax);
+  const reservedQty = Math.min(
+    Math.max(0, Math.trunc(variant.reservedQty || 0)),
+    stockQty
+  );
+
+  return {
+    ...variant,
+    stockQty,
+    reorderLevel,
+    maxStock,
+    reservedQty,
+    buyPrice: Math.max(0, variant.buyPrice || 0),
+    sellPrice: Math.max(0, variant.sellPrice || 0),
+  };
+};
+
+const getTotalPrice = (variant: Variant) => variant.maxStock * variant.buyPrice;
+
+const getProfitPrice = (variant: Variant) =>
+  variant.sellPrice * variant.maxStock - getTotalPrice(variant);
+
 const CreateProductForm = () => {
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [imageTarget, setImageTarget] = useState<{
+    variantIndex: number;
+    imageIndex: number | null;
+  } | null>(null);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-
   const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
   const [brandId, setBrandId] = useState<number | null>(null);
   const [categoryId, setCategoryId] = useState<number | null>(null);
+  const [variants, setVariants] = useState<Variant[]>([createEmptyVariant()]);
 
-  const [variants, setVariants] = useState<Variant[]>([
+  const statusOptions = [
     {
-      color: '',
-      price: 0,
-      stockQty: 0,
-      specifications: [],
-    },
-  ]);
-  const status = [
-    {
-      key: "in-stock",
-      value: 'InStock',
-      title: 'InStock',
+      key: 'in-stock',
+      value: 'IN_STOCK' as const,
+      title: 'In Stock',
       description: 'For items that are currently available.',
     },
     {
-      key: "preorder",
-      value: 'Preorder',
+      key: 'preorder',
+      value: 'PREORDER' as const,
       title: 'Preorder',
       description: 'For items that are not yet available.',
     },
+  ];
 
-  ]
+  const purchaseStatusOptions = [
+    {
+      key: 'pending',
+      value: 'PENDING' as const,
+      title: 'Pending',
+      description: 'Waiting for the purchase process to finish.',
+    },
+    {
+      key: 'purchased',
+      value: 'PURCHASED' as const,
+      title: 'Purchased',
+      description: 'Already purchased and ready for inventory tracking.',
+    },
+  ];
+
+  const specTemplates = {
+    Phone: [
+      { key: 'RAM', value: '12GB' },
+      { key: 'Storage', value: '256GB' },
+      { key: 'Battery', value: '5000mAh' },
+      { key: 'Main Camera', value: '108MP' },
+      { key: 'Front Camera', value: '32MP' },
+      { key: 'Processor', value: 'Snapdragon 8 Gen 2' },
+    ],
+    Laptop: [
+      { key: 'RAM', value: '16GB' },
+      { key: 'Storage', value: '512GB SSD' },
+      { key: 'Battery', value: '80Wh' },
+      { key: 'Processor', value: 'Intel Core i7-12700H' },
+      { key: 'Graphics', value: 'NVIDIA GeForce RTX 3060' },
+    ],
+    'Power Bank': [
+      { key: 'Capacity', value: '20000mAh' },
+      { key: 'Output', value: '2x USB-A, 1x USB-C' },
+      { key: 'Input', value: 'USB-C' },
+      { key: 'Charging Speed', value: '18W' },
+    ],
+    Headphone: [
+      { key: 'Type', value: 'Over-Ear' },
+      { key: 'Connectivity', value: 'Bluetooth 5.0' },
+      { key: 'Battery Life', value: '30 hours' },
+      { key: 'Noise Cancellation', value: 'Active' },
+    ],
+  } as const;
+
+  const imageViewLabels = ['Front view', 'Back view', 'Left view', 'Right view'];
+
   useEffect(() => {
     const load = async () => {
-      const brands = await getbrand();
-      const categories = await getCategory();
-      setBrands(brands);
-      setCategories(categories);
+      const fetchedBrands = await getbrand();
+      const fetchedCategories = await getCategory();
+      setBrands(fetchedBrands);
+      setCategories(fetchedCategories);
     };
 
     load();
   }, []);
-  console.log(brands, categories);
-  // ADD VARIANT
+
   const addVariant = () => {
-    setVariants([
-      ...variants,
-      {
-        color: '',
-        price: 0,
-        stockQty: 0,
-        specifications: [],
-      },
-    ]);
+    setVariants((current) => [...current, createEmptyVariant()]);
   };
 
-  // UPDATE VARIANT
-  const updateVariant = (index: number, field: keyof Variant, value: any) => {
-    const updated = [...variants];
-    (updated[index] as any)[field] = value;
-    setVariants(updated);
-  };
-
-  // ADD SPEC
-  const addSpec = (variantIndex: number) => {
-    const updated = [...variants];
-    updated[variantIndex].specifications.push({
-      key: '',
-      value: '',
+  const copyVariant = (index: number) => {
+    setVariants((current) => {
+      const variantToCopy = current[index];
+      return [...current, createCopiedVariant(variantToCopy)];
     });
-    setVariants(updated);
   };
 
-  // UPDATE SPEC
+  const updateVariant = <K extends keyof Variant>(
+    index: number,
+    field: K,
+    value: Variant[K]
+  ) => {
+    setVariants((current) =>
+      current.map((variant, variantIndex) =>
+        variantIndex === index
+          ? normalizeVariant({
+              ...variant,
+              [field]: value,
+            })
+          : variant
+      )
+    );
+  };
+
+  const addSpec = (variantIndex: number) => {
+    setVariants((current) =>
+      current.map((variant, index) =>
+        index === variantIndex
+          ? {
+              ...variant,
+              specifications: [...variant.specifications, { key: '', value: '' }],
+            }
+          : variant
+      )
+    );
+  };
+
+  const applySpecTemplate = (
+    variantIndex: number,
+    template: readonly Spec[]
+  ) => {
+    setVariants((current) =>
+      current.map((variant, index) =>
+        index === variantIndex
+          ? {
+              ...variant,
+              specifications: template.map((spec) => ({ ...spec })),
+            }
+          : variant
+      )
+    );
+  };
+
   const updateSpec = (
-    vIndex: number,
-    sIndex: number,
+    variantIndex: number,
+    specIndex: number,
     field: keyof Spec,
     value: string
   ) => {
-    const updated = [...variants];
-    updated[vIndex].specifications[sIndex][field] = value;
-    setVariants(updated);
+    setVariants((current) =>
+      current.map((variant, index) => {
+        if (index !== variantIndex) return variant;
+
+        return {
+          ...variant,
+          specifications: variant.specifications.map((spec, currentSpecIndex) =>
+            currentSpecIndex === specIndex ? { ...spec, [field]: value } : spec
+          ),
+        };
+      })
+    );
   };
+
+  const handleImageFiles = (variantIndex: number, files: FileList | null) => {
+    if (!files) return;
+
+    setVariants((current) =>
+      current.map((variant, index) => {
+        if (index !== variantIndex) return variant;
+
+        const selectedFiles = Array.from(files);
+        const updatedImages = [...variant.images];
+
+        for (let fileIndex = 0; fileIndex < selectedFiles.length && fileIndex < 4; fileIndex += 1) {
+          const file = selectedFiles[fileIndex];
+          const slotIndex = updatedImages.findIndex((image) => image === null);
+
+          if (slotIndex === -1) break;
+
+          updatedImages[slotIndex] = { file, url: URL.createObjectURL(file) };
+        }
+
+        return {
+          ...variant,
+          images: updatedImages,
+        };
+      })
+    );
+  };
+
+  const replaceVariantImage = (
+    variantIndex: number,
+    imageIndex: number,
+    file: File
+  ) => {
+    setVariants((current) =>
+      current.map((variant, index) => {
+        if (index !== variantIndex) return variant;
+
+        const updatedImages = [...variant.images];
+        updatedImages[imageIndex] = { file, url: URL.createObjectURL(file) };
+
+        return {
+          ...variant,
+          images: updatedImages,
+        };
+      })
+    );
+  };
+
+  const removeVariantImage = (variantIndex: number, imageIndex: number) => {
+    setVariants((current) =>
+      current.map((variant, index) => {
+        if (index !== variantIndex) return variant;
+
+        const updatedImages = [...variant.images];
+        updatedImages[imageIndex] = null;
+
+        return {
+          ...variant,
+          images: updatedImages,
+        };
+      })
+    );
+  };
+
+  const openVariantFilePicker = (
+    variantIndex: number,
+    imageIndex: number | null
+  ) => {
+    setImageTarget({ variantIndex, imageIndex });
+    fileInputRef.current?.click();
+  };
+
+  const handleFileInputChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const files = event.target.files;
+    if (!files?.length || !imageTarget) return;
+
+    if (imageTarget.imageIndex === null) {
+      handleImageFiles(imageTarget.variantIndex, files);
+    } else {
+      replaceVariantImage(
+        imageTarget.variantIndex,
+        imageTarget.imageIndex,
+        files[0]
+      );
+    }
+
+    setImageTarget(null);
+    event.target.value = '';
+  };
+
+  useEffect(() => {
+    return () => {
+      variants.forEach((variant) => {
+        variant.images.forEach((image) => {
+          if (image) {
+            URL.revokeObjectURL(image.url);
+          }
+        });
+      });
+    };
+  }, [variants]);
+
   const handleSubmit = async () => {
     try {
-      console.log("Submitting product with data:", {
+      const formData = new FormData();
+      const payload = {
         name,
-        categoryId,
-        brandId,
-        variants,
-      });
-      await createProduct({
-        name,
+        description,
         categoryId: Number(categoryId),
         brandId: Number(brandId),
-        variants,
-      });
+        variants: variants.map((variant, variantIndex) => ({
+          color: variant.color,
+          sku: variant.sku,
+          barcode: variant.barcode,
+          stockQty: variant.stockQty,
+          reservedQty: variant.reservedQty,
+          reorderLevel: variant.reorderLevel,
+          maxStock: variant.maxStock,
+          buyPrice: variant.buyPrice,
+          sellPrice: variant.sellPrice,
+          status: variant.status,
+          purchaseStatus: variant.purchaseStatus,
+          specifications: variant.specifications.filter(
+            (spec) => spec.key.trim() || spec.value.trim()
+          ),
+          images: variant.images
+            .filter((image): image is ImagePreview => image !== null)
+            .map((image, imageIndex) => {
+              const fileKey = `variant-${variantIndex}-image-${imageIndex}`;
+              formData.append(fileKey, image.file);
+              return { fileKey };
+            }),
+        })),
+      };
+
+      formData.append('payload', JSON.stringify(payload));
+
+      await createProduct(formData);
 
       alert('Product created successfully');
-
-      // reset form
       setName('');
+      setDescription('');
       setBrandId(null);
       setCategoryId(null);
-      setVariants([
-        {
-          color: '',
-          price: 0,
-          stockQty: 0,
-          specifications: [],
-        },
-      ]);
+      setVariants([createEmptyVariant()]);
     } catch (error) {
       console.error(error);
       alert('Failed to create product');
     }
   };
+
   return (
-    <div className="space-y-6 overflow-y-auto no-scrollbar pt-2 h-full">
-      {/* two-column layout */}
-      <div className="grid  grid-cols-2 w-full  gap-4  text-white  ">
-        {/* first layout */}
-        <div className=' border-2  border-solid p-3 rounded-lg '>
-          <div className='text-xl font-bold mb-10 text-foreground'>General Info</div>
-          <div className='flex flex-col gap-y-5'>
-            <div className=' font-medium text-muted-foreground 
-'>Product Name <Input className="w-full h-10 mt-4" /></div>
-            <div className=' font-medium text-muted-foreground 
-'> description
-              <Textarea /></div>
-
+    <div className="h-full space-y-6 overflow-y-auto pt-2 no-scrollbar">
+      <div className="grid w-full grid-cols-2 gap-4 text-white">
+        <div className="rounded-lg border-2 border-solid p-3">
+          <div className="mb-10 text-xl font-bold text-foreground">
+            General Info
           </div>
-
-        </div>
-        {/* second layout */}
-        <div className=' border-2   border-solid p-3 rounded-lg '>
-          <div className='text-xl font-bold mb-10 text-foreground'>Classification</div>
-          {/* cate and brand */}
-          <div className='flex flex-col gap-y-5'>
-            {/* category */}
-            <div className=' font-medium text-muted-foreground 
-'>Category
-
-              <Select>
-                <SelectTrigger className="w-full h-12 py-5 mt-4">
-                  <SelectValue placeholder={
-                    categories.find((c) => c.id === categoryId)?.name || 'Select Category'
-                  } />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {categories.map((c) => (
-                      <SelectItem
-                        key={c.id}
-                        onClick={() => setCategoryId(c.id)}
-                        value={c.name}
-                        className="cursor-pointer gap-2 rounded-md px-3 py-2 text-sm hover:bg-accent/50 data-[state=checked]:bg-accent"
-                      >
-                        {c.name}
-                      </SelectItem>
-                    ))}
-
-
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+          <div className="flex flex-col gap-y-5">
+            <div className="font-medium text-muted-foreground">
+              Product Name
+              <Input
+                className="mt-4 h-10 w-full"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+              />
             </div>
-            {/* brand */}
-            <div className=' font-medium text-muted-foreground 
-'> Brand
-              <Select>
-                <SelectTrigger className="w-full h-12 py-5 mt-4">
-                  <SelectValue placeholder={
-                    brands.find((b) => b.id === brandId)?.name || 'Select Brand'
-                  } />
+            <div className="font-medium text-muted-foreground">
+              Description
+              <Textarea
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-lg border-2 border-solid p-3">
+          <div className="mb-10 text-xl font-bold text-foreground">
+            Classification
+          </div>
+          <div className="flex flex-col gap-y-5">
+            <div className="font-medium text-muted-foreground">
+              Category
+              <Select
+                value={categoryId ? String(categoryId) : undefined}
+                onValueChange={(value) => setCategoryId(Number(value))}
+              >
+                <SelectTrigger className="mt-4 h-12 w-full py-5">
+                  <SelectValue placeholder="Select Category" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    {brands.map((b) => (
+                    {categories.map((category) => (
                       <SelectItem
-                        key={b.id}
-                        onClick={() => setBrandId(b.id)}
-                        value={b.name}
+                        key={category.id}
+                        value={String(category.id)}
                         className="cursor-pointer gap-2 rounded-md px-3 py-2 text-sm hover:bg-accent/50 data-[state=checked]:bg-accent"
                       >
-                        {b.name}
+                        {category.name}
                       </SelectItem>
                     ))}
-
-
                   </SelectGroup>
                 </SelectContent>
               </Select>
             </div>
 
+            <div className="font-medium text-muted-foreground">
+              Brand
+              <Select
+                value={brandId ? String(brandId) : undefined}
+                onValueChange={(value) => setBrandId(Number(value))}
+              >
+                <SelectTrigger className="mt-4 h-12 w-full py-5">
+                  <SelectValue placeholder="Select Brand" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {brands.map((brand) => (
+                      <SelectItem
+                        key={brand.id}
+                        value={String(brand.id)}
+                        className="cursor-pointer gap-2 rounded-md px-3 py-2 text-sm hover:bg-accent/50 data-[state=checked]:bg-accent"
+                      >
+                        {brand.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-
         </div>
-
       </div>
-   
-      {/* variants and one-col layout */}
-      <div className=' border-2 w-full   border-solid p-3 rounded-lg '>
-        <div className='flex  items-center justify-between mb-10 text-foreground'>
+
+      <div className="w-full rounded-lg border-2 border-solid p-3">
+        <div className="mb-10 flex items-center justify-between text-foreground">
           <div>
-            <h1 className="mb-4 text-xl font-bold tracking-tight text-heading">Product Variants</h1>
-            <p className="mb-6 text-lg font-normal text-body lg:text-xl text-muted-foreground">Manage different versions, colors, and storage capacities for this product.</p>
+            <h1 className="mb-4 text-xl font-bold tracking-tight text-heading">
+              Product Variants
+            </h1>
+            <p className="mb-6 text-lg font-normal text-body text-muted-foreground lg:text-xl">
+              Manage different versions, colors, and storage capacities for this
+              product.
+            </p>
           </div>
-          <div><Button size="lg">+ Add Variant</Button></div>
+          <div>
+            <Button size="lg" type="button" onClick={addVariant}>
+              + Add Variant
+            </Button>
+          </div>
         </div>
-        <Card className="relative w-1/4 pt-0">
-          <div className="absolute inset-0 z-30 aspect-video bg-black/35" />
-          <img
-            src="https://avatar.vercel.sh/shadcn1"
-            alt="Event cover"
-            className="relative z-20 aspect-video w-full object-cover brightness-60 grayscale dark:brightness-40"
-          />
-          <CardHeader>
-            <CardAction>
-              {/* <Badge variant="secondary">Featured</Badge> */}
-            </CardAction>
-            <CardTitle>Design systems meetup</CardTitle>
-            <CardDescription className='flex flex-col gap-y-5'>
-              <div className=' items-center gap-x-2   text-muted-foreground 
-'>Color *
-                <Input className="w-full h-9 " />
-              </div>
-              <div className='flex items-center gap-x-2   text-muted-foreground 
-'>
-  <div>Stock *
-                <Input className="w-full h-9 " /></div>
-                <div>
-                 low level Stock
-                <Input className="w-full h-9 " />
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          hidden
+          multiple={imageTarget?.imageIndex === null}
+          onChange={handleFileInputChange}
+        />
+
+        <div className="space-y-5">
+          {variants.map((variant, index) => {
+            const totalPrice = getTotalPrice(variant);
+            const profitPrice = getProfitPrice(variant);
+
+            return (
+              <Card key={index} className="relative overflow-hidden pt-0">
+                <div className="space-y-3 p-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    {imageViewLabels.map((label, slotIndex) => {
+                      const image = variant.images[slotIndex];
+
+                      return (
+                        <div
+                          key={slotIndex}
+                          className="group relative overflow-hidden rounded-3xl border border-white/10 bg-slate-950"
+                        >
+                          {image ? (
+                            <>
+                              <Image
+                                src={image.url}
+                                alt={`${label} for variant ${index + 1}`}
+                                width={640}
+                                height={320}
+                                unoptimized
+                                className="h-40 w-full object-cover transition duration-200 group-hover:scale-105"
+                              />
+                              <div className="absolute inset-0 flex flex-col justify-between bg-gradient-to-t from-black/80 to-transparent p-3 opacity-0 transition duration-200 group-hover:opacity-100">
+                                <span className="text-[10px] uppercase tracking-[0.3em] text-white">
+                                  {label}
+                                </span>
+                                <div className="flex justify-between gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    type="button"
+                                    onClick={() =>
+                                      openVariantFilePicker(index, slotIndex)
+                                    }
+                                  >
+                                    Replace
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    type="button"
+                                    onClick={() =>
+                                      removeVariantImage(index, slotIndex)
+                                    }
+                                  >
+                                    Remove
+                                  </Button>
+                                </div>
+                              </div>
+                            </>
+                          ) : (
+                            <button
+                              type="button"
+                              className="flex h-40 w-full flex-col items-center justify-center gap-2 rounded-3xl border border-dashed border-white/20 bg-white/5 px-3 text-sm text-muted-foreground hover:border-white/30"
+                              onClick={() =>
+                                openVariantFilePicker(index, slotIndex)
+                              }
+                            >
+                              <span className="text-[11px] uppercase tracking-[0.3em] text-white/75">
+                                {label}
+                              </span>
+                              <span className="text-white">Upload</span>
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <span className="text-sm text-muted-foreground">
+                      {
+                        variant.images.filter((image) => image !== null).length
+                      }{' '}
+                      / 4 photos
+                    </span>
+                    {variant.images.some((image) => image === null) && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        type="button"
+                        onClick={() => openVariantFilePicker(index, null)}
+                      >
+                        Add photo
+                      </Button>
+                    )}
+                  </div>
                 </div>
-              </div>
-              <div className='flex items-center gap-x-2   text-muted-foreground 
-'><div>  Buy Price*
-                <Input className="w-full h-9 " /></div>
-                <div>
-                  Selling Price *
-                <Input className="w-full h-9 " />
-                </div>
-              </div>
-       
-                <div className=' font-bold mb-2 text-foreground'>Choose your status *</div>
-        <RadioGroup defaultValue="plus" className="grid gap-3 max-w-sm">
-          {status.map((plan) => (
-            <label
-              key={plan.value}
-              htmlFor={`${plan.value}-plan`}
-              className="flex cursor-pointer items-center justify-between gap-4 rounded-2xl border border-white/10  p-3 text-left"
-            >
-              <div>
-                <div className="text-sm font-semibold text-white">{plan.title}</div>
-                <p className="text-sm text-slate-400">{plan.description}</p>
-              </div>
-              <RadioGroupItem value={plan.value} id={`${plan.value}-plan`} />
-            </label>
-          ))}
-        </RadioGroup>
-            </CardDescription>
-          </CardHeader>
-          <CardFooter>
-            <Button className="w-full">View Event</Button>
-          </CardFooter>
-        </Card>
 
+                <CardHeader>
+                  <CardAction />
+                  <CardTitle>{`Variant ${index + 1}`}</CardTitle>
 
+                  <CardDescription className="flex flex-col gap-y-5">
+                    <div className="flex flex-wrap items-center gap-2 text-muted-foreground">
+                      <div className="min-w-[180px] flex-1">
+                        Color *
+                        <Input
+                          className="h-9 w-full"
+                          value={variant.color}
+                          onChange={(event) =>
+                            updateVariant(index, 'color', event.target.value)
+                          }
+                        />
+                      </div>
+                      <div className="min-w-[180px] flex-1">
+                        Sku
+                        <Input
+                          className="h-9 w-full"
+                          value={variant.sku}
+                          onChange={(event) =>
+                            updateVariant(index, 'sku', event.target.value)
+                          }
+                        />
+                      </div>
+                      <div className="min-w-[180px] flex-1">
+                        Bar Code
+                        <Input
+                          className="h-9 w-full"
+                          value={variant.barcode}
+                          onChange={(event) =>
+                            updateVariant(index, 'barcode', event.target.value)
+                          }
+                        />
+                      </div>
+                    </div>
 
-      </div>
-      <div>
-        sdjfjsajfsdjfoij
+                    <div className="flex flex-wrap items-start gap-2 text-muted-foreground">
+                      <div className="min-w-[170px] flex-1">
+                        Stock *
+                        <Input
+                          type="number"
+                          min={1}
+                          className="h-9 w-full"
+                          value={variant.stockQty}
+                          onChange={(event) =>
+                            updateVariant(
+                              index,
+                              'stockQty',
+                              Number(event.target.value)
+                            )
+                          }
+                        />
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Stock must stay greater than low stock.
+                        </p>
+                      </div>
+                      <div className="min-w-[170px] flex-1">
+                        Low Stock
+                        <Input
+                          type="number"
+                          min={0}
+                          max={Math.max(variant.stockQty - 1, 0)}
+                          className="h-9 w-full"
+                          value={variant.reorderLevel}
+                          onChange={(event) =>
+                            updateVariant(
+                              index,
+                              'reorderLevel',
+                              Number(event.target.value)
+                            )
+                          }
+                        />
+                      </div>
+                      <div className="min-w-[170px] flex-1">
+                        Total Stock (Max Stock)
+                        <Input
+                          type="number"
+                          min={Math.max(
+                            variant.stockQty,
+                            variant.reorderLevel
+                          ) + 1}
+                          className="h-9 w-full"
+                          value={variant.maxStock}
+                          onChange={(event) =>
+                            updateVariant(
+                              index,
+                              'maxStock',
+                              Number(event.target.value)
+                            )
+                          }
+                        />
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Max stock always stays greater than stock and low stock.
+                        </p>
+                      </div>
+                      <div className="min-w-[170px] flex-1">
+                        Reserved Qty
+                        <Input
+                          type="number"
+                          min={0}
+                          max={variant.stockQty}
+                          className="h-9 w-full"
+                          value={variant.reservedQty}
+                          onChange={(event) =>
+                            updateVariant(
+                              index,
+                              'reservedQty',
+                              Number(event.target.value)
+                            )
+                          }
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-start gap-2 text-muted-foreground">
+                      <div className="min-w-[170px] flex-1">
+                        Buy Price *
+                        <Input
+                          type="number"
+                          min={0}
+                          className="h-9 w-full"
+                          value={variant.buyPrice}
+                          onChange={(event) =>
+                            updateVariant(
+                              index,
+                              'buyPrice',
+                              Number(event.target.value)
+                            )
+                          }
+                        />
+                      </div>
+                      <div className="min-w-[170px] flex-1">
+                        Selling Price *
+                        <Input
+                          type="number"
+                          min={0}
+                          className="h-9 w-full"
+                          value={variant.sellPrice}
+                          onChange={(event) =>
+                            updateVariant(
+                              index,
+                              'sellPrice',
+                              Number(event.target.value)
+                            )
+                          }
+                        />
+                      </div>
+                      <div className="min-w-[170px] flex-1">
+                        Total Price *
+                        <Input
+                          className="h-9 w-full"
+                          value={totalPrice}
+                          readOnly
+                        />
+                      </div>
+                      <div className="min-w-[170px] flex-1">
+                        Profit Price *
+                        <Input
+                          className="h-9 w-full"
+                          value={profitPrice}
+                          readOnly
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="flex flex-wrap gap-3">
+                        {Object.entries(specTemplates).map(
+                          ([templateName, template]) => (
+                            <Button
+                              className="mr-0"
+                              key={templateName}
+                              variant="outline"
+                              size="sm"
+                              type="button"
+                              onClick={() =>
+                                applySpecTemplate(index, template)
+                              }
+                            >
+                              {templateName}
+                            </Button>
+                          )
+                        )}
+                      </div>
+
+                      {variant.specifications.map((spec, specIndex) => (
+                        <div key={specIndex} className="flex gap-2">
+                          <Input
+                            placeholder="Custom Key"
+                            className="h-9 w-full"
+                            value={spec.key}
+                            onChange={(event) =>
+                              updateSpec(
+                                index,
+                                specIndex,
+                                'key',
+                                event.target.value
+                              )
+                            }
+                          />
+
+                          <Input
+                            placeholder="Custom Value"
+                            className="h-9 w-full"
+                            value={spec.value}
+                            onChange={(event) =>
+                              updateSpec(
+                                index,
+                                specIndex,
+                                'value',
+                                event.target.value
+                              )
+                            }
+                          />
+                        </div>
+                      ))}
+
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="w-fit px-0 text-sm text-indigo-400 hover:text-indigo-300"
+                        onClick={() => addSpec(index)}
+                      >
+                        + Add Specification
+                      </Button>
+                    </div>
+
+                    <div className="grid gap-2 md:grid-cols-2">
+                      <RadioGroup
+                        value={variant.status}
+                        onValueChange={(value) =>
+                          updateVariant(index, 'status', value as VariantStatus)
+                        }
+                        className="grid max-w-sm gap-3"
+                      >
+                        <div className="mb-2 font-bold text-foreground">
+                          Product status *
+                        </div>
+                        {statusOptions.map((option) => (
+                          <label
+                            key={`${option.key}-${index}`}
+                            htmlFor={`${option.key}-${index}`}
+                            className="flex cursor-pointer items-center justify-between gap-4 rounded-2xl border border-white/10 p-3 text-left"
+                          >
+                            <div>
+                              <div className="text-sm font-semibold text-white">
+                                {option.title}
+                              </div>
+                              <p className="text-sm text-slate-400">
+                                {option.description}
+                              </p>
+                            </div>
+                            <RadioGroupItem
+                              value={option.value}
+                              id={`${option.key}-${index}`}
+                            />
+                          </label>
+                        ))}
+                      </RadioGroup>
+
+                      <RadioGroup
+                        value={variant.purchaseStatus}
+                        onValueChange={(value) =>
+                          updateVariant(
+                            index,
+                            'purchaseStatus',
+                            value as PurchaseStatus
+                          )
+                        }
+                        className="grid max-w-sm gap-3"
+                      >
+                        <div className="mb-2 font-bold text-foreground">
+                          Purchase status *
+                        </div>
+                        {purchaseStatusOptions.map((option) => (
+                          <label
+                            key={`${option.key}-${index}`}
+                            htmlFor={`${option.key}-${index}-purchase`}
+                            className="flex cursor-pointer items-center justify-between gap-4 rounded-2xl border border-white/10 p-3 text-left"
+                          >
+                            <div>
+                              <div className="text-sm font-semibold text-white">
+                                {option.title}
+                              </div>
+                              <p className="text-sm text-slate-400">
+                                {option.description}
+                              </p>
+                            </div>
+                            <RadioGroupItem
+                              value={option.value}
+                              id={`${option.key}-${index}-purchase`}
+                            />
+                          </label>
+                        ))}
+                      </RadioGroup>
+                    </div>
+                  </CardDescription>
+                </CardHeader>
+
+                <CardFooter className="flex flex-wrap justify-between gap-3">
+                  <Button type="button" variant="outline" onClick={() => copyVariant(index)}>
+                    Copy This Variant
+                  </Button>
+                  <Button type="button" onClick={handleSubmit}>
+                    Save Product
+                  </Button>
+                </CardFooter>
+              </Card>
+            );
+          })}
+        </div>
       </div>
     </div>
-
   );
 };
 
