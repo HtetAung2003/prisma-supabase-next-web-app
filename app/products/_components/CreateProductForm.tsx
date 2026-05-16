@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
+// set type 
 type Brand = { id: number; name: string };
 type Category = { id: number; name: string };
 
@@ -122,7 +123,7 @@ const CreateProductForm = () => {
   const [imageTarget, setImageTarget] = useState<{
     variantIndex: number;
     imageIndex: number | null;
-  } | null>(null);
+  } | null>(null);   // to know image index and also variant index
   const [brands, setBrands] = useState<Brand[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [name, setName] = useState('');
@@ -203,18 +204,18 @@ const CreateProductForm = () => {
 
     load();
   }, []);
-
+//  to create variant ( empty variant)
   const addVariant = () => {
     setVariants((current) => [...current, createEmptyVariant()]);
   };
-
+//  to create copy variant
   const copyVariant = (index: number) => {
     setVariants((current) => {
       const variantToCopy = current[index];
       return [...current, createCopiedVariant(variantToCopy)];
     });
   };
-
+//  to update variant
   const updateVariant = <K extends keyof Variant>(
     index: number,
     field: K,
@@ -231,7 +232,7 @@ const CreateProductForm = () => {
       )
     );
   };
-
+//  add sepcification ( new spec or existing spec)
   const addSpec = (variantIndex: number) => {
     setVariants((current) =>
       current.map((variant, index) =>
@@ -244,7 +245,7 @@ const CreateProductForm = () => {
       )
     );
   };
-
+//  ready-made spec template
   const applySpecTemplate = (
     variantIndex: number,
     template: readonly Spec[]
@@ -260,7 +261,7 @@ const CreateProductForm = () => {
       )
     );
   };
-
+// to update spec
   const updateSpec = (
     variantIndex: number,
     specIndex: number,
@@ -282,15 +283,18 @@ const CreateProductForm = () => {
   };
 
   const handleImageFiles = (variantIndex: number, files: FileList | null) => {
+    // return it is not choosen photo
     if (!files) return;
-
+    
     setVariants((current) =>
       current.map((variant, index) => {
         if (index !== variantIndex) return variant;
-
+        // change array selected photo
         const selectedFiles = Array.from(files);
+     
+        // copy photo ( spread operator ) to show preview
         const updatedImages = [...variant.images];
-
+            // defien slots to add photos using for loop ( 4 is 4 slots)
         for (let fileIndex = 0; fileIndex < selectedFiles.length && fileIndex < 4; fileIndex += 1) {
           const file = selectedFiles[fileIndex];
           const slotIndex = updatedImages.findIndex((image) => image === null);
@@ -299,7 +303,6 @@ const CreateProductForm = () => {
 
           updatedImages[slotIndex] = { file, url: URL.createObjectURL(file) };
         }
-
         return {
           ...variant,
           images: updatedImages,
@@ -343,36 +346,39 @@ const CreateProductForm = () => {
       })
     );
   };
-
+// add , remove , replace photo ( file picker ) btn
   const openVariantFilePicker = (
     variantIndex: number,
     imageIndex: number | null
   ) => {
-    setImageTarget({ variantIndex, imageIndex });
+    setImageTarget({ variantIndex, imageIndex }); 
     fileInputRef.current?.click();
   };
-
+//  emplty array add photo or data array replace photo function
   const handleFileInputChange = (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
+    // photo file
     const files = event.target.files;
     if (!files?.length || !imageTarget) return;
-
+        // imageindex is null add photo
     if (imageTarget.imageIndex === null) {
-      handleImageFiles(imageTarget.variantIndex, files);
+      handleImageFiles(imageTarget.variantIndex, files);   // variant index and photo file 
     } else {
+      //  replace photo  ( variant index and image index and photo file)
       replaceVariantImage(
         imageTarget.variantIndex,
         imageTarget.imageIndex,
         files[0]
       );
     }
-
+    // to reset for next photo
     setImageTarget(null);
     event.target.value = '';
   };
 
   useEffect(() => {
+    // clean up function to remove photo memory  from browser 
     return () => {
       variants.forEach((variant) => {
         variant.images.forEach((image) => {
