@@ -6,7 +6,7 @@ import Sidebar from "./Sidebar";
 const ContentLayout = ({children}: {children: React.ReactNode}) => {
     const [visible , setVisible] =useState(true);
   return (
-  <div className="flex h-full p-5 gap-5 bg-background">
+  <div className="flex h-full p-5 gap-5 ">
             <Sidebar visible={visible} />
             <div className="rounded-[28px] border border-border/70 flex flex-col w-full h-full bg-card">
       <Navbar visible={visible} setVisible={setVisible}/>  
