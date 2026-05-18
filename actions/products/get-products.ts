@@ -20,3 +20,28 @@ export const getProduct = async () => {
         throw new Error("Failed to fetch product");
     }
 }
+export const getProductById = async (id : number) => {
+  try {
+    const data = await db.product.findUnique({
+      where: {
+        id: id,
+      },
+      include: {
+        variants: {
+          include: {
+            specifications: true,
+            images: true,
+          },
+        },
+        brand: true,
+        category: true,
+      },
+    });
+
+    return data;
+    
+  } catch (error) {
+    console.error("Database Error:", error);
+    throw new Error("Failed to fetch product");
+  }
+};

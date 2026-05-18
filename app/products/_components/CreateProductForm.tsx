@@ -26,6 +26,9 @@ import {
 } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
+interface CreateProductFormProps {
+  initialState?: any;
+}
 // set type 
 type Brand = { id: number; name: string };
 type Category = { id: number; name: string };
@@ -118,7 +121,9 @@ const getTotalPrice = (variant: Variant) => variant.maxStock * variant.buyPrice;
 const getProfitPrice = (variant: Variant) =>
   variant.sellPrice * variant.maxStock - getTotalPrice(variant);
 
-const CreateProductForm = () => {
+const CreateProductForm = ({initialState} : CreateProductFormProps) => {
+  console.log(initialState,"initial state");
+  
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [imageTarget, setImageTarget] = useState<{
     variantIndex: number;
@@ -126,7 +131,7 @@ const CreateProductForm = () => {
   } | null>(null);   // to know image index and also variant index
   const [brands, setBrands] = useState<Brand[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [name, setName] = useState('');
+  const [name, setName] = useState(initialState.name ? initialState.name : "");
   const [description, setDescription] = useState('');
   const [brandId, setBrandId] = useState<number | null>(null);
   const [categoryId, setCategoryId] = useState<number | null>(null);
@@ -452,7 +457,7 @@ const CreateProductForm = () => {
               <Input
                 className="mt-4 h-10 w-full"
                 value={name}
-                onChange={(event) => setName(event.target.value)}
+                onChange={(event) => setName(initialState.name ? initialState.name : event.target.value)}
               />
             </div>
             <div className="font-medium text-muted-foreground">

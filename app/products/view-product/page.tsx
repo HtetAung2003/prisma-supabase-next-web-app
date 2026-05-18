@@ -1,3 +1,4 @@
+'use client';
 import { TableSkeleton } from "@/components/TableSkeleton"
 import { Button } from "@/components/ui/button"
 import Loader from "@/components/ui/Loader"
@@ -19,6 +20,7 @@ import {
   useReactTable,
   ExpandedState
 } from "@tanstack/react-table"
+import { useRouter } from "next/navigation";
 import React, { useState } from "react"
 
 interface DataTableProps<TData> {
@@ -44,7 +46,7 @@ export function ProductTable<TData>({
     getCoreRowModel: getCoreRowModel(),  // to render table fundamental structure
     getExpandedRowModel: getExpandedRowModel(),   // to enable expanded rows ( support) and to work expand and collapse
   })
-
+  const router =useRouter();
   const renderVariantDetails = (row: Row<TData>) => {
     const product = row.original as any;  // product data
     const variants = product.variants || [];   // variant 
@@ -119,7 +121,7 @@ export function ProductTable<TData>({
                   )}
                 </td>
                       <td className="py-2">
-                <Button variant="default">Edit</Button>
+                <Button variant="default" onClick={() => router.push(`/products/${v.id}`)}>Edit</Button>
                 </td>
 
 

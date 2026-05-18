@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { ColumnDef } from "@tanstack/react-table"
+import { useRouter } from "next/navigation"
 
 export type Product = {
   id: string
@@ -61,9 +62,10 @@ export const columns: ColumnDef<Product>[] = [
     accessorKey: "variants",
     header: "Action",
     cell: ({ row }) => {
-
+      const route = useRouter();
       const variants = row.original.variants;
-
+        console.log(row.original.id);
+        
       if (!variants) {
         return <span className="text-muted-foreground">-</span>;
       }
@@ -76,9 +78,9 @@ export const columns: ColumnDef<Product>[] = [
           {row.getIsExpanded() ? "Hide Variant" : "View Variant"}
          
         </Button>
-        <Button >Edit</Button></div>
+        <Button onClick={()=> route.push(`products/${row.original.id}`)}>Edit</Button></div>
       ) : (
-       <Button >Edit</Button>
+       <Button onClick={()=> route.push(`products/${row.original.id}`)}>Edit</Button>   
       );
     }
   }
