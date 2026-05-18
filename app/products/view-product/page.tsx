@@ -121,7 +121,7 @@ export function ProductTable<TData>({
                   )}
                 </td>
                       <td className="py-2">
-                <Button variant="default" onClick={() => router.push(`/products/${v.id}`)}>Edit</Button>
+                <Button variant="default" onClick={() => router.push(`/products/${product.id}`)}>Edit</Button>
                 </td>
 
 

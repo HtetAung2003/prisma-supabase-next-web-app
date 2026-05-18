@@ -6,7 +6,7 @@ import { db } from "@/lib/db";
 export const getCategory = async () => {
     try {
         const data = await db.category.findMany();
-        console.log("data", data);
+        // console.log("data", data);
         
         return data;
 

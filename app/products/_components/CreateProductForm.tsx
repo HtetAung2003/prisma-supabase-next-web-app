@@ -25,6 +25,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { EditProduct } from '@/actions/products/update-products';
 
 interface CreateProductFormProps {
   initialState?: any;
@@ -131,11 +132,40 @@ const CreateProductForm = ({initialState} : CreateProductFormProps) => {
   } | null>(null);   // to know image index and also variant index
   const [brands, setBrands] = useState<Brand[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [name, setName] = useState(initialState.name ? initialState.name : "");
-  const [description, setDescription] = useState('');
-  const [brandId, setBrandId] = useState<number | null>(null);
-  const [categoryId, setCategoryId] = useState<number | null>(null);
-  const [variants, setVariants] = useState<Variant[]>([createEmptyVariant()]);
+  const [name, setName] = useState(initialState?.name ? initialState.name : "");
+  const [description, setDescription] = useState(initialState?.description ? initialState.description : "");
+  const [brandId, setBrandId] = useState<number | null>(initialState?.brand ? initialState.brand.id : "");
+  const [categoryId, setCategoryId] = useState<number | null>(initialState?.category ? initialState.category.id : "");
+  const [variants, setVariants] = useState<Variant[]>(() => {
+    // ၁။ တကယ်လို့ initialState ထဲမှာ variants data တွေ ပါလာခဲ့ရင် (Edit Mode)
+    if (initialState?.variants && initialState.variants.length > 0) {
+      return initialState.variants.map((v: any) => ({
+        color: v.color || '',
+        sku: v.sku || '',
+        barcode: v.barcode || '',
+        stockQty: v.stockQty ?? 1,
+        reorderLevel: v.reorderLevel ?? 0,
+        maxStock: v.maxStock ?? 2,
+        reservedQty: v.reservedQty ?? 0,
+     
+        buyPrice: Number(v.buyPrice || 0), 
+        sellPrice: Number(v.sellPrice || 0),
+        status: v.status || 'IN_STOCK',
+        purchaseStatus: v.purchaseStatus || 'PENDING',
+        specifications: v.specifications || [],
+     
+        images: v.images 
+          ? [
+              ...v.images.map((img: any) => ({ file: null, url: img.imageUrl || img })), 
+              ...Array(Math.max(0, 4 - v.images.length)).fill(null)
+            ].slice(0, 4)
+          : [...DEFAULT_IMAGE_SLOTS],
+      }));
+    }
+    
+ 
+    return [createEmptyVariant()];
+  });
 
   const statusOptions = [
     {
@@ -220,6 +250,7 @@ const CreateProductForm = ({initialState} : CreateProductFormProps) => {
       return [...current, createCopiedVariant(variantToCopy)];
     });
   };
+
 //  to update variant
   const updateVariant = <K extends keyof Variant>(
     index: number,
@@ -443,7 +474,57 @@ const CreateProductForm = ({initialState} : CreateProductFormProps) => {
       alert('Failed to create product');
     }
   };
+const handleEdit = async () => {
+  try {
+    const formData = new FormData();
+    const payload = {
+      id: initialState?.id, 
+      name,
+      description,
+      categoryId: Number(categoryId),
+      brandId: Number(brandId),
+      variants: variants.map((variant, variantIndex) => ({
+        id: (variant as any).id || undefined, 
+        color: variant.color,
+        sku: variant.sku,
+        barcode: variant.barcode,
+        stockQty: variant.stockQty,
+        reservedQty: variant.reservedQty,
+        reorderLevel: variant.reorderLevel,
+        maxStock: variant.maxStock,
+        buyPrice: variant.buyPrice,
+        sellPrice: variant.sellPrice,
+        status: variant.status,
+        purchaseStatus: variant.purchaseStatus,
+        specifications: variant.specifications.filter(
+          (spec) => spec.key.trim() || spec.value.trim()
+        ),
+       
+        images: variant.images
+          .filter((image): image is ImagePreview => image !== null)
+          .map((image, imageIndex) => {
+           
+            if (image.file) {
+              const fileKey = `variant-${variantIndex}-image-${imageIndex}`;
+              formData.append(fileKey, image.file); 
+              return { isNew: true, fileKey };
+            }
+            
+         
+            return { isNew: false, url: image.url }; 
+          }),
+      })),
+    };
 
+    formData.append('payload', JSON.stringify(payload));
+    await EditProduct(formData);
+
+    alert('Product updated successfully');
+  } catch (error) {
+    console.error(error);
+    alert('Failed to update product');
+  }
+};
   return (
     <div className="h-full space-y-6 overflow-y-auto pt-2 no-scrollbar">
       <div className="grid w-full grid-cols-2 gap-4 text-white">
@@ -457,7 +538,7 @@ const CreateProductForm = ({initialState} : CreateProductFormProps) => {
               <Input
                 className="mt-4 h-10 w-full"
                 value={name}
-                onChange={(event) => setName(initialState.name ? initialState.name : event.target.value)}
+                onChange={(event) => setName(initialState?.name ? initialState.name : event.target.value)}
               />
             </div>
             <div className="font-medium text-muted-foreground">
@@ -954,13 +1035,27 @@ const CreateProductForm = ({initialState} : CreateProductFormProps) => {
                   <Button type="button" variant="outline" onClick={() => copyVariant(index)}>
                     Copy This Variant
                   </Button>
-                  <Button type="button" onClick={handleSubmit}>
-                    Save Product
-                  </Button>
+                 
                 </CardFooter>
               </Card>
+             
             );
           })}
+          {
+            initialState?.name ? (
+             <Button type="button" onClick={handleEdit}>
+                    Edit Product
+                  </Button> 
+            )
+
+                  :
+                  (
+                 <Button type="button" onClick={handleSubmit}>
+                    Save Product
+                  </Button> 
+                  )
+          }
+            
         </div>
       </div>
     </div>

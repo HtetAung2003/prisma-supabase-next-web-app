@@ -11,9 +11,8 @@ export const getProduct = async () => {
                 variants: true
             }
         });
-        console.log("data", data);
         
-        return data;
+       return JSON.parse(JSON.stringify(data));
 
     } catch (error) {
         console.error("Database Error:", error);
