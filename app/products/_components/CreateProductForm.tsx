@@ -85,7 +85,16 @@ const cloneSpecifications = (specifications: Spec[]) =>
   specifications.map((spec) => ({ ...spec }));
 
 const cloneImages = (images: (ImagePreview | null)[]) =>
-  images.map((image) => (image ? { ...image } : null));
+  images.map((image) => {
+    if (!image) return null;
+
+    return {
+      file: image.file,
+      url: image.file
+        ? URL.createObjectURL(image.file)
+        : image.url,
+    };
+  });
 
 const createCopiedVariant = (variant: Variant): Variant => ({
   ...variant,
@@ -137,7 +146,7 @@ const CreateProductForm = ({initialState} : CreateProductFormProps) => {
   const [brandId, setBrandId] = useState<number | null>(initialState?.brand ? initialState.brand.id : "");
   const [categoryId, setCategoryId] = useState<number | null>(initialState?.category ? initialState.category.id : "");
   const [variants, setVariants] = useState<Variant[]>(() => {
-    // ၁။ တကယ်လို့ initialState ထဲမှာ variants data တွေ ပါလာခဲ့ရင် (Edit Mode)
+    // if intial state has data (Edit Mode)
     if (initialState?.variants && initialState.variants.length > 0) {
       return initialState.variants.map((v: any) => ({
         color: v.color || '',
@@ -436,8 +445,7 @@ const CreateProductForm = ({initialState} : CreateProductFormProps) => {
         brandId: Number(brandId),
         variants: variants.map((variant, variantIndex) => ({
           color: variant.color,
-          sku: variant.sku,
-          barcode: variant.barcode,
+         
           stockQty: variant.stockQty,
           reservedQty: variant.reservedQty,
           reorderLevel: variant.reorderLevel,

@@ -86,7 +86,7 @@ export const columns: ColumnDef<Product>[] = [
     }
   },
   {
-    accessorKey: "variants",
+    accessorKey: "Edit",
     header: "Action",
     cell: ({ row }) => {
       const route = useRouter();

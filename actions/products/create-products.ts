@@ -19,8 +19,6 @@ type VariantImageInput = {
 
 type VariantInput = {
   color?: string;
-  sku?: string;
-  barcode?: string;
   stockQty: number;
   reservedQty?: number;
   reorderLevel?: number;
@@ -116,52 +114,118 @@ export const createProduct = async (formData: FormData) => {
       };
     })
   );
-
-  await db.product.create({
+const product = await db.product.create({
+  data: {
+    name: name.trim(),
+    description,
+    categoryId,
+    brandId,
+  },
+});
+for (const variant of variantsWithUploadedImages) {
+  const createdVariant = await db.productVariant.create({
     data: {
-      name: name.trim(),
+      productId: product.id,
 
-      description,
+      color: variant.color,
 
-      categoryId,
+      stockQty: variant.stockQty,
+      reservedQty: variant.reservedQty,
+      reorderLevel: variant.reorderLevel,
+      maxStock: variant.maxStock,
 
-      brandId,
+      buyPrice: variant.buyPrice,
+      sellPrice: variant.sellPrice,
 
-      variants: {
-        create: variantsWithUploadedImages.map((variant) => ({
-          color: variant.color,
-          sku: variant.sku,
-          barcode: variant.barcode,
-          stockQty: variant.stockQty,
-          reservedQty: variant.reservedQty ,
-          reorderLevel: variant.reorderLevel,
-          maxStock: variant.maxStock,
-          buyPrice: variant.buyPrice,
-          sellPrice: variant.sellPrice,
-          isPreorder: variant.isPreorder ?? false,
-          status: variant.status ?? ProductStatus.IN_STOCK,
-          purchaseStatus: variant.purchaseStatus ?? PurchaseStatus.PENDING,
+      isPreorder: variant.isPreorder ?? false,
 
-          specifications: variant.specifications?.length
-            ? {
-                create: variant.specifications.map((spec) => ({
-                  key: spec.key,
-                  value: spec.value,
-                })),
-              }
-            : undefined,
+      status: variant.status ?? ProductStatus.IN_STOCK,
 
-          images: variant.images?.length
-            ? {
-                create: variant.images.map((image) => ({
-                  imageUrl: image.imageUrl,
-                })),
-              }
-            : undefined,
-        })),
-      },
+      purchaseStatus:
+        variant.purchaseStatus ?? PurchaseStatus.PENDING,
     },
   });
+
+  const sku = `SKU-${createdVariant.id
+    .toString()
+    .padStart(5, '0')}`;
+
+  const barcode = `8800${createdVariant.id
+    .toString()
+    .padStart(8, '0')}`;
+
+  await db.productVariant.update({
+    where: {
+      id: createdVariant.id,
+    },
+    data: {
+      sku,
+      barcode,
+
+      specifications: variant.specifications?.length
+        ? {
+            create: variant.specifications.map((spec) => ({
+              key: spec.key,
+              value: spec.value,
+            })),
+          }
+        : undefined,
+
+      images: variant.images?.length
+        ? {
+            create: variant.images.map((image) => ({
+              imageUrl: image.imageUrl,
+            })),
+          }
+        : undefined,
+    },
+  });
+}
+  // await db.product.create({
+  //   data: {
+  //     name: name.trim(),
+
+  //     description,
+
+  //     categoryId,
+
+  //     brandId,
+
+  //     variants: {
+  //       create: variantsWithUploadedImages.map((variant) => ({
+  //         color: variant.color,
+  //         sku: variant.sku,
+  //         barcode: variant.barcode,
+  //         stockQty: variant.stockQty,
+  //         reservedQty: variant.reservedQty ,
+  //         reorderLevel: variant.reorderLevel,
+  //         maxStock: variant.maxStock,
+  //         buyPrice: variant.buyPrice,
+  //         sellPrice: variant.sellPrice,
+  //         isPreorder: variant.isPreorder ?? false,
+  //         status: variant.status ?? ProductStatus.IN_STOCK,
+  //         purchaseStatus: variant.purchaseStatus ?? PurchaseStatus.PENDING,
+
+  //         specifications: variant.specifications?.length
+  //           ? {
+  //               create: variant.specifications.map((spec) => ({
+  //                 key: spec.key,
+  //                 value: spec.value,
+  //               })),
+  //             }
+  //           : undefined,
+
+  //         images: variant.images?.length
+  //           ? {
+  //               create: variant.images.map((image) => ({
+  //                 imageUrl: image.imageUrl,
+  //               })),
+  //             }
+  //           : undefined,
+  //       })),
+  //     },
+  //   },
+  // });
 
   revalidatePath('/products');
 };
