@@ -35,10 +35,10 @@ const MenuDropdownCategory = ({ categoryId, setIsEditing }: MenuDropdownCategory
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger>
-        <Button variant="ghost" className="h-10 w-10 rounded-full bg-slate-900/80 text-slate-100 shadow-sm shadow-black/20">
+      <DropdownMenuTrigger className="h-10 w-10 rounded-full bg-slate-900/80 text-slate-100 shadow-sm shadow-black/20">
+     
           <Icon icon={More01FreeIcons} size={20} />
-        </Button>
+      
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-44 bg-slate-950 text-white border border-slate-800" align="start">
         <DropdownMenuGroup>

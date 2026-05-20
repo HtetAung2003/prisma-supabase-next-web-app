@@ -14,14 +14,13 @@ interface CreateDialogProps {
 const CreateDialog = ({ entityName }: CreateDialogProps) => {
   return (
     <Dialog>
-      <DialogTrigger>
-        <Button
-          variant="default"
-          size="xs"
+      <DialogTrigger 
+      
           className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-sm transition-all duration-200 hover:shadow-md h-10"
-        >
+     >
+      
           Create {entityName}
-        </Button>
+        
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg bg-neutral-900 border-none shadow-md">
         <DialogHeader>

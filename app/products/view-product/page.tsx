@@ -18,7 +18,8 @@ import {
   getExpandedRowModel,
   Row,
   useReactTable,
-  ExpandedState
+  ExpandedState,
+  getPaginationRowModel
 } from "@tanstack/react-table"
 import { useRouter } from "next/navigation";
 import React, { useState } from "react"
@@ -27,13 +28,21 @@ interface DataTableProps<TData> {
   columns: ColumnDef<TData>[]
   data: TData[]
   isLoading : boolean
+  pageCount : number
+  page : string
+  setPage : string
 }
 
 export function ProductTable<TData>({
   columns,
   data,
-  isLoading
+  isLoading,
+  pageCount,
+  page,
+  setPage
 }: DataTableProps<TData>) {
+  console.log("enter",data);
+  
   const [expanded, setExpanded] = useState<ExpandedState>({}) // to store which rows are open or close as object
   const table = useReactTable({
     data: data ?? [],
@@ -45,8 +54,14 @@ export function ProductTable<TData>({
 
     getCoreRowModel: getCoreRowModel(),  // to render table fundamental structure
     getExpandedRowModel: getExpandedRowModel(),   // to enable expanded rows ( support) and to work expand and collapse
+  getPaginationRowModel: getPaginationRowModel(),
+  manualPagination: true,   
+pageCount: pageCount, 
+
   })
   const router =useRouter();
+
+  
   const renderVariantDetails = (row: Row<TData>) => {
     const product = row.original as any;  // product data
     const variants = product.variants || [];   // variant 
@@ -186,6 +201,21 @@ export function ProductTable<TData>({
 </TableBody>
 
       </Table>
+      <div className="flex items-center justify-end space-x-2 py-4">
+<Button
+  onClick={() => setPage((p) => p - 1)}
+  disabled={page <= 1}
+>
+  Previous
+</Button>
+
+<Button
+  onClick={() => setPage((p) => p + 1)}
+  disabled={page >= pageCount}
+>
+  Next
+</Button>
+      </div>
     </div>
   )
 }

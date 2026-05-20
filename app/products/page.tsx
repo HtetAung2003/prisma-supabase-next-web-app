@@ -12,12 +12,14 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getProduct } from "@/actions/products/get-products";
 
-const page = () => {
-
-const { data : products , isLoading , isError , error} = useQuery({
-    queryKey: ["products"],
-    queryFn : () => getProduct(),
+const ProductPage = () => {
+const [page, setPage] = useState(1)
+const limit = 5
+const { data, isLoading, isError } = useQuery({
+  queryKey: ["products", page],
+  queryFn: () => getProduct(page, limit),
 })
+
     return(
         <>
       <div className="flex  justify-between items-center">
@@ -34,8 +36,14 @@ const { data : products , isLoading , isError , error} = useQuery({
         
       </div>
    
-  <ProductTable columns={columns} data={products} isLoading={isLoading}/>
-        </>
+<ProductTable
+        columns={columns}
+        data={data?.data ?? []}
+        pageCount={data?.pagination?.totalPages ?? 0}
+        isLoading={isLoading}
+        page={page}
+        setPage={setPage}
+      />        </>
     )
 }
-export default page;
+export default ProductPage;

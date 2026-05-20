@@ -145,6 +145,14 @@ const CreateProductForm = ({initialState} : CreateProductFormProps) => {
   const [description, setDescription] = useState(initialState?.description ? initialState.description : "");
   const [brandId, setBrandId] = useState<number | null>(initialState?.brand ? initialState.brand.id : "");
   const [categoryId, setCategoryId] = useState<number | null>(initialState?.category ? initialState.category.id : "");
+// const selectedCategoryName = categories.find(
+//   (c) => c.id === categoryId
+// )?.name; 
+// console.log(selectedCategoryName);
+// useEffect(() => 
+//   selectedCategoryName
+
+// ,[brandId])
   const [variants, setVariants] = useState<Variant[]>(() => {
     // if intial state has data (Edit Mode)
     if (initialState?.variants && initialState.variants.length > 0) {
@@ -235,7 +243,7 @@ const CreateProductForm = ({initialState} : CreateProductFormProps) => {
       { key: 'Noise Cancellation', value: 'Active' },
     ],
   } as const;
-
+// set image slot 
   const imageViewLabels = ['Front view', 'Back view', 'Left view', 'Right view'];
 
   useEffect(() => {
@@ -566,27 +574,28 @@ const handleEdit = async () => {
           <div className="flex flex-col gap-y-5">
             <div className="font-medium text-muted-foreground">
               Category
-              <Select
-                value={categoryId ? String(categoryId) : undefined}
-                onValueChange={(value) => setCategoryId(Number(value))}
-              >
-                <SelectTrigger className="mt-4 h-12 w-full py-5">
-                  <SelectValue placeholder="Select Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {categories.map((category) => (
-                      <SelectItem
-                        key={category.id}
-                        value={String(category.id)}
-                        className="cursor-pointer gap-2 rounded-md px-3 py-2 text-sm hover:bg-accent/50 data-[state=checked]:bg-accent"
-                      >
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+             <Select
+  value={categoryId ? String(categoryId) : undefined}
+  onValueChange={(value) => setCategoryId(Number(value))}
+>
+  <SelectTrigger className="mt-4 h-12 w-full py-5">
+    <SelectValue>
+      {categories.find((c) => c.id === categoryId)?.name || "Select Category"}
+    </SelectValue>
+  </SelectTrigger>
+  <SelectContent>
+    <SelectGroup>
+      {categories.map((category) => (
+        <SelectItem
+          key={category.id}
+          value={String(category.id)}
+        >
+          {category.name}
+        </SelectItem>
+      ))}
+    </SelectGroup>
+  </SelectContent>
+</Select>
             </div>
 
             <div className="font-medium text-muted-foreground">
@@ -596,7 +605,9 @@ const handleEdit = async () => {
                 onValueChange={(value) => setBrandId(Number(value))}
               >
                 <SelectTrigger className="mt-4 h-12 w-full py-5">
-                  <SelectValue placeholder="Select Brand" />
+                  <SelectValue >
+                    {brands.find((b) => b.id === brandId)?.name || "Select Brand"}
+                    </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
@@ -645,22 +656,26 @@ const handleEdit = async () => {
         />
 
         <div className="space-y-5">
+          {/* variant.map because it can many have variant */}
           {variants.map((variant, index) => {
             const totalPrice = getTotalPrice(variant);
             const profitPrice = getProfitPrice(variant);
 
             return (
-              <Card key={index} className="relative overflow-hidden pt-0">
+              // card may have many so , key is index 0 , 1, 2 
+              <Card key={index} className="relative overflow-hidden pt-0"> 
                 <div className="space-y-3 p-4">
                   <div className="grid grid-cols-2 gap-3">
+                    {/* to set 4 slots image  ( front , back , side ..)*/}
                     {imageViewLabels.map((label, slotIndex) => {
-                      const image = variant.images[slotIndex];
+                      const image = variant.images[slotIndex];    // slot index have 0 ,1 2, 3
 
                       return (
                         <div
                           key={slotIndex}
                           className="group relative overflow-hidden rounded-3xl border border-white/10 bg-slate-950"
                         >
+                          {/* check iamge have or not  */}
                           {image ? (
                             <>
                               <Image
@@ -681,7 +696,7 @@ const handleEdit = async () => {
                                     variant="outline"
                                     type="button"
                                     onClick={() =>
-                                      openVariantFilePicker(index, slotIndex)
+                                      openVariantFilePicker(index, slotIndex) // to replace existing photo
                                     }
                                   >
                                     Replace
@@ -691,7 +706,7 @@ const handleEdit = async () => {
                                     variant="ghost"
                                     type="button"
                                     onClick={() =>
-                                      removeVariantImage(index, slotIndex)
+                                      removeVariantImage(index, slotIndex) // to remove photo using removeVaraintImage ( index is variant index and slotindex is image index within one varaint)
                                     }
                                   >
                                     Remove
@@ -700,6 +715,7 @@ const handleEdit = async () => {
                               </div>
                             </>
                           ) : (
+                            // new photo
                             <button
                               type="button"
                               className="flex h-40 w-full flex-col items-center justify-center gap-2 rounded-3xl border border-dashed border-white/20 bg-white/5 px-3 text-sm text-muted-foreground hover:border-white/30"
@@ -725,16 +741,7 @@ const handleEdit = async () => {
                       }{' '}
                       / 4 photos
                     </span>
-                    {variant.images.some((image) => image === null) && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        type="button"
-                        onClick={() => openVariantFilePicker(index, null)}
-                      >
-                        Add photo
-                      </Button>
-                    )}
+                   
                   </div>
                 </div>
 
@@ -754,7 +761,7 @@ const handleEdit = async () => {
                           }
                         />
                       </div>
-                      <div className="min-w-[180px] flex-1">
+                      {/* <div className="min-w-[180px] flex-1">
                         Sku
                         <Input
                           className="h-9 w-full"
@@ -763,8 +770,8 @@ const handleEdit = async () => {
                             updateVariant(index, 'sku', event.target.value)
                           }
                         />
-                      </div>
-                      <div className="min-w-[180px] flex-1">
+                      </div> */}
+                      {/* <div className="min-w-[180px] flex-1">
                         Bar Code
                         <Input
                           className="h-9 w-full"
@@ -773,7 +780,7 @@ const handleEdit = async () => {
                             updateVariant(index, 'barcode', event.target.value)
                           }
                         />
-                      </div>
+                      </div> */}
                     </div>
 
                     <div className="flex flex-wrap items-start gap-2 text-muted-foreground">
