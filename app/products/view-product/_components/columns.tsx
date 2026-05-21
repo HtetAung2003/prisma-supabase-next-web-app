@@ -1,6 +1,6 @@
 import { Icon } from "@/components/Icon"
 import { Button } from "@/components/ui/button"
-import { ArrowDown01, ArrowDownNarrowWide, ArrowRight01FreeIcons, ArrowUp01, ArrowUp01FreeIcons } from "@hugeicons/core-free-icons"
+import { ArrowDown01FreeIcons, ArrowDown02Icon, ArrowDownNarrowWide, ArrowRight01FreeIcons, ArrowUp01FreeIcons } from "@hugeicons/core-free-icons"
 import { ColumnDef } from "@tanstack/react-table"
 import { useRouter } from "next/navigation"
 
@@ -18,7 +18,14 @@ export type Product = {
   variants: []
 
 }
-export const columns: ColumnDef<Product>[] = [
+
+export const getColumns = (
+  // onSort function to handle sorting when header is clicked, it receives the field name to sort by .omes from page.tsx and is used to update sortBy and sortOrder state which in turn triggers refetching of data with new sorting)
+  onSort: (field: string ) => void, 
+  sortBy: string,
+  sortOrder: "asc" | "desc",
+  onEdit: (id: string) => void
+): ColumnDef<Product>[] => [
   {
     accessorKey: "variants",
     header: "",
@@ -44,10 +51,34 @@ export const columns: ColumnDef<Product>[] = [
       )
     }
   },
-  {
-    accessorKey: "name",
-    header: "Name",
-  },
+ {
+  accessorKey: "name",
+header: () => {
+  const isActive = sortBy === "name"
+
+  return (
+    <Button
+      variant="link"
+      size="sm"
+      onClick={() => onSort("name")}
+      className="flex items-center gap-2"
+    >
+      Name
+
+      {/* ICON LOGIC */}
+      {isActive ? (
+        sortOrder === "asc" ? (
+            <Icon icon={ArrowUp01FreeIcons} size={20} />
+        ) : (
+          <Icon icon={ArrowDown01FreeIcons} size={20} />
+        )
+      ) : (
+         <Icon icon={ArrowUp01FreeIcons} size={20} />
+      )}
+    </Button>
+  )
+}
+},
   {
     accessorKey: "brand.name",
     header: "Brand",
@@ -59,7 +90,31 @@ export const columns: ColumnDef<Product>[] = [
 
   {
     accessorKey: "createdAt",
-    header: "cratedAt",
+  header: () => {
+  const isActive = sortBy === "createdAt"
+
+  return (
+    <Button
+      variant="link"
+      size="sm"
+      onClick={() => onSort("createdAt")}
+      className="flex items-center gap-2"
+    >
+      Created At
+
+      {/* ICON LOGIC */}
+      {isActive ? (
+        sortOrder === "asc" ? (
+            <Icon icon={ArrowUp01FreeIcons} size={20} />
+        ) : (
+          <Icon icon={ArrowDown01FreeIcons} size={20} />
+        )
+      ) : (
+         <Icon icon={ArrowUp01FreeIcons} size={20} />
+      )}
+    </Button>
+  )
+},
     cell: ({ row }) => {
       const dateValue = row.getValue("createdAt") as string | Date;
 
@@ -73,7 +128,31 @@ export const columns: ColumnDef<Product>[] = [
   },
   {
     accessorKey: "updatedAt",
-    header: "Updated At",
+    header: () => {
+  const isActive = sortBy === "updatedAt"
+
+  return (
+    <Button
+      variant="link"
+      size="sm"
+      onClick={() => onSort("updatedAt")}
+      className="flex items-center gap-2"
+    >
+      Updated At
+
+      {/* ICON LOGIC */}
+      {isActive ? (
+        sortOrder === "asc" ? (
+            <Icon icon={ArrowUp01FreeIcons} size={20} />
+        ) : (
+          <Icon icon={ArrowDown01FreeIcons} size={20} />
+        )
+      ) : (
+         <Icon icon={ArrowUp01FreeIcons} size={20} />
+      )}
+    </Button>
+  )
+},
     cell: ({ row }) => {
       const dateValue = row.getValue("createdAt") as string | Date;
 
@@ -85,20 +164,12 @@ export const columns: ColumnDef<Product>[] = [
       return localDate;
     }
   },
-  {
-    accessorKey: "Edit",
-    header: "Action",
-    cell: ({ row }) => {
-      const route = useRouter();
-
-
-
-
-      return (
-        <div className="flex gap-3">  <Button onClick={() => route.push(`products/${row.original.id}`)}>Edit</Button></div>
-      )
-
-
-    }
-  }
+ {
+  accessorKey: "Edit",
+  cell: ({ row }) => (
+    <Button onClick={() => onEdit(row.original.id)}>
+      Edit
+    </Button>
+  ),
+}
 ]

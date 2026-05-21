@@ -4,15 +4,21 @@ import { db } from "@/lib/db";
 
 export const getProduct = async (
   page: number = 1,
-  limit: number = 5) => {
+  limit: number = 5,
+     sortBy: string = "createdAt",
+  sortOrder: "asc" | "desc" = "desc") => {
 
   try {
     const skip = (page-1)*limit
+
     const [ products, totalProducts]= await Promise.all([
       db.product.findMany({
         skip,
         take: limit,
-       
+       orderBy: {
+          [sortBy]: sortOrder,
+        },
+
         include: {
         brand: true,
         category: true,

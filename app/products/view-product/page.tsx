@@ -19,7 +19,9 @@ import {
   Row,
   useReactTable,
   ExpandedState,
-  getPaginationRowModel
+  getPaginationRowModel,
+  getSortedRowModel,
+  SortingState
 } from "@tanstack/react-table"
 import { useRouter } from "next/navigation";
 import React, { useState } from "react"
@@ -35,23 +37,25 @@ interface DataTableProps<TData> {
 
 export function ProductTable<TData>({
   columns,
-  data,
+  data, 
   isLoading,
   pageCount,
   page,
-  setPage
+  setPage 
 }: DataTableProps<TData>) {
-  console.log("enter",data);
   
   const [expanded, setExpanded] = useState<ExpandedState>({}) // to store which rows are open or close as object
+  const [sorting,setSorting]=useState<SortingState>([]) // to store sorting state as array of objects [{id:"columnId",desc:true}]
   const table = useReactTable({
     data: data ?? [],
     columns: columns ?? [],
     state: {
       expanded,
+       sorting
     },
     onExpandedChange: setExpanded,
-
+    onSortingChange: setSorting,
+    getSortedRowModel: getSortedRowModel(),
     getCoreRowModel: getCoreRowModel(),  // to render table fundamental structure
     getExpandedRowModel: getExpandedRowModel(),   // to enable expanded rows ( support) and to work expand and collapse
   getPaginationRowModel: getPaginationRowModel(),
@@ -169,7 +173,7 @@ pageCount: pageCount,
 
      <TableBody>
   {isLoading ? (
-    <TableSkeleton columns={6} />
+    <TableSkeleton columns={7} />
   ) : table.getRowModel().rows.length ? (
     table.getRowModel().rows.map((row) => (
       <React.Fragment key={row.id}>
