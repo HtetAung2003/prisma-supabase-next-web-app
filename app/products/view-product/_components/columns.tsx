@@ -39,7 +39,7 @@ export const getColumns = (
       return variants && variants.length > 0 ? (
         <div className="flex gap-3">
           <Button variant="link" size="sm"
-
+            className="cursor-pointer"
             onClick={() => row.toggleExpanded()}   // toogle expand and collapse ( built-in)
           >
             {row.getIsExpanded() ? <Icon icon={ArrowUp01FreeIcons} size={50}/> : <Icon icon={ArrowRight01FreeIcons} size={50}/> }

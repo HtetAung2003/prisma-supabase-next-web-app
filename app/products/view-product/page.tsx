@@ -25,14 +25,31 @@ import {
 } from "@tanstack/react-table"
 import { useRouter } from "next/navigation";
 import React, { useState } from "react"
+import { Field, FieldLabel } from "@/components/ui/field"
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 interface DataTableProps<TData> {
   columns: ColumnDef<TData>[]
   data: TData[]
-  isLoading : boolean
-  pageCount : number
-  page : string
-  setPage : string
+  isLoading: boolean
+  pageCount: number
+  page: number
+  setPage: React.Dispatch<React.SetStateAction<number>>
+  setLimit: React.Dispatch<React.SetStateAction<number>>
 }
 
 export function ProductTable<TData>({
@@ -40,8 +57,8 @@ export function ProductTable<TData>({
   data, 
   isLoading,
   pageCount,
-  page,
-  setPage 
+  page, setLimit,
+  setPage ,
 }: DataTableProps<TData>) {
   
   const [expanded, setExpanded] = useState<ExpandedState>({}) // to store which rows are open or close as object
@@ -152,74 +169,98 @@ pageCount: pageCount,
     );
   }
   return (
-    <div className="rounded-md border">
-      <Table>
-        <TableHeader>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
-              {headerGroup.headers.map((header) => (
-                <TableHead key={header.id}>
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(
-                      header.column.columnDef.header,
-                      header.getContext()
-                    )}
-                </TableHead>
-              ))}
-            </TableRow>
-          ))}
-        </TableHeader>
+      <div className="rounded-md border">
+        {/* Fixed header */}
+        <Table>
+          <TableHeader className="sticky top-0 z-10 ">
+            {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                      <TableHead key={header.id}>
+                        {header.isPlaceholder
+                            ? null
+                            : flexRender(
+                                header.column.columnDef.header,
+                                header.getContext()
+                            )}
+                      </TableHead>
+                  ))}
+                </TableRow>
+            ))}
+          </TableHeader>
+        </Table>
 
-     <TableBody>
-  {isLoading ? (
-    <TableSkeleton columns={7} />
-  ) : table.getRowModel().rows.length ? (
-    table.getRowModel().rows.map((row) => (
-      <React.Fragment key={row.id}>
-        <TableRow data-state={row.getIsExpanded() && "selected"}>
-          {row.getVisibleCells().map((cell) => (
-            <TableCell key={cell.id}>
-              {flexRender(cell.column.columnDef.cell, cell.getContext())}
-            </TableCell>
-          ))}
-        </TableRow>
+        {/* Scrollable body */}
+        <div className="max-h-100 overflow-y-auto no-scrollbar">
+          <Table>
+            <TableBody>
+              {isLoading ? (
+                  <TableSkeleton columns={7} />
+              ) : table.getRowModel().rows.length ? (
+                  table.getRowModel().rows.map((row) => (
+                      <React.Fragment key={row.id}>
+                        <TableRow>
+                          {row.getVisibleCells().map((cell) => (
+                              <TableCell key={cell.id}>
+                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                              </TableCell>
+                          ))}
+                        </TableRow>
 
-        {/* Expanded Row */}
-        {row.getIsExpanded() && (
-          <TableRow>
-            <TableCell colSpan={columns.length} className="p-0">
-              {renderVariantDetails(row)}
-            </TableCell>
-          </TableRow>
-        )}
-      </React.Fragment>
-    ))
-  ) : (
-    <TableRow>
-      <TableCell colSpan={columns.length} className="text-center h-24">
-        No data found
-      </TableCell>
-    </TableRow>
-  )}
-</TableBody>
+                        {row.getIsExpanded() && (
+                            <TableRow>
+                              <TableCell colSpan={columns.length} className="p-0">
+                                {renderVariantDetails(row)}
+                              </TableCell>
+                            </TableRow>
+                        )}
+                      </React.Fragment>
+                  ))
+              ) : (
+                  <TableRow>
+                    <TableCell colSpan={columns.length} className="text-center h-24">
+                      No data found
+                    </TableCell>
+                  </TableRow>
+              )}
+            </TableBody>
+          </Table>
 
-      </Table>
-      <div className="flex items-center justify-end space-x-2 py-4">
-<Button
-  onClick={() => setPage((p) => p - 1)}
-  disabled={page <= 1}
->
-  Previous
-</Button>
-
-<Button
-  onClick={() => setPage((p) => p + 1)}
-  disabled={page >= pageCount}
->
-  Next
-</Button>
       </div>
-    </div>
+        {/*<div className="flex items-center justify-end space-x-2 py-4"> <Button onClick={() => setPage((p) => p - 1)} disabled={page <= 1} > Previous </Button> <Button onClick={() => setPage((p) => p + 1)} disabled={page >= pageCount} > Next </Button> </div>*/}
+        <div className="flex items-center justify-end gap-4 mt-3  p-3" >
+          <Field orientation="horizontal" className="w-fit">
+            <FieldLabel htmlFor="select-rows-per-page">Rows per page</FieldLabel>
+            <Select
+
+                     onValueChange={(value) =>
+                         setLimit(Number(value))
+                     }>
+              <SelectTrigger className="w-20" id="select-rows-per-page">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent align="start">
+                <SelectGroup>
+                  <SelectItem value="5">5</SelectItem>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="25">25</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </Field>
+          <Pagination className="mx-0 w-auto">
+            <PaginationContent>
+              <PaginationItem>
+                <Button onClick={() => setPage((p) => p - 1)} disabled={page <= 1} > Previous </Button>
+              </PaginationItem>
+              <PaginationItem>
+                <Button onClick={() => setPage((p) => p + 1)} disabled={page >= pageCount} > Next </Button>
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      </div>
   )
 }

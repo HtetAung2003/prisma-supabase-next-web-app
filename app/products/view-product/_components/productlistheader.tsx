@@ -65,11 +65,12 @@ function ProductHeader({
   setSearch,
 }: ProductHeaderProps) {
   const [isOpen, setIsOpen] = useState(false);
-
+  const [inputValue, setInputValue] = useState("");
   const [brands, setBrands] = useState<
     { id: number; name: string }[]
   >([]);
-
+ const [inputBrand ,setInputBrand]= useState<number | null >(null )
+  const [inputCategory , setInputCateogry]= useState<number | null >( null)
   const [categories, setCategories] = useState<
     { id: number; name: string }[]
   >([]);
@@ -78,7 +79,14 @@ function ProductHeader({
     from: undefined,
     to: undefined,
   });
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setSearch(inputValue);
 
+    }, 1000);
+
+    return () => clearTimeout(handler);
+  }, [inputValue]);
   useEffect(() => {
     const load = async () => {
       const fetchedBrands = await getbrand();
@@ -90,7 +98,10 @@ function ProductHeader({
 
     load();
   }, []);
-
+const ApplyFilter = () => {
+  setBrandId(inputBrand)
+  setCategoryId(inputCategory)
+}
   return (
     <div className="space-y-5">
       {/* TOP HEADER */}
@@ -151,8 +162,8 @@ function ProductHeader({
             "
           >
             <InputGroupInput
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
               placeholder="Search products..."
               className="border-0 focus-visible:ring-0"
             />
@@ -204,17 +215,17 @@ function ProductHeader({
               <Select
                 value={
                   brandId
-                    ? String(brandId)
+                    ? Number(inputBrand)
                     : undefined
                 }
                 onValueChange={(value) =>
-                  setBrandId(Number(value))
+                    setInputBrand(Number(value))
                 }
               >
                 <SelectTrigger className="h-12 rounded-xl">
                   <SelectValue placeholder="Select Brand">
                     {brands.find(
-                      (b) => b.id === brandId
+                      (b) => b.id === inputBrand
                     )?.name || "Select Brand"}
                   </SelectValue>
                 </SelectTrigger>
@@ -243,17 +254,17 @@ function ProductHeader({
               <Select
                 value={
                   categoryId
-                    ? String(categoryId)
+                    ? Number(inputCategory)
                     : undefined
                 }
                 onValueChange={(value) =>
-                  setCategoryId(Number(value))
+                    setInputCateogry(Number(value))
                 }
               >
                 <SelectTrigger className="h-12 rounded-xl">
                   <SelectValue placeholder="Select Category">
                     {categories.find(
-                      (c) => c.id === categoryId
+                      (c) => c.id === inputCategory
                     )?.name || "Select Category"}
                   </SelectValue>
                 </SelectTrigger>
@@ -347,19 +358,21 @@ function ProductHeader({
                 onClick={() => {
                   setBrandId(null);
                   setCategoryId(null);
-
+                  setInputBrand(null);
+                  setInputCateogry(null);
                   setDate({
                     from: undefined,
                     to: undefined,
                   });
 
                   setSearch("");
+                  setInputValue("");
                 }}
               >
                 Clear Filters
               </Button>
 
-              <Button className="rounded-xl">
+              <Button className="rounded-xl" onClick={() => ApplyFilter()}>
                 Apply Filters
               </Button>
             </div>

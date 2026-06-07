@@ -24,7 +24,7 @@ const BrandsPage = () => {
             ))}
         </ul> */}
          {isLoading ? (
-       <div className="flex min-h-screen items-center justify-center">
+           <div className="flex min-h-screen items-center justify-center">
   <div className="rounded-lg border border-border bg-card p-6 text-sm text-muted-foreground">
     <Loader />
   </div>

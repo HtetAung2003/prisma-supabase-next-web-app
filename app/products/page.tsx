@@ -18,23 +18,26 @@ import ProductHeader from "./view-product/_components/productlistheader";
 
 
 const ProductPage = () => {
-const [page, setPage] = useState(1)
-
+const [page, setPage] = useState<number | 1>(1)
 const [sortBy, setSortBy] = useState("createdAt")
 const [brandId, setBrandId] = useState<number | null>(null)
 const [categoryId, setCategoryId] = useState<number | null>(null)
 const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
-const limit = 5
+    const [ search , setSearch] = useState("")
+    const [ limit , setLimit] =useState<number | 5>(5)
+
 const { data, isLoading, isError } = useQuery({
-  queryKey: ["products", page, sortBy, sortOrder],
-  queryFn: () => getProduct(page, limit, sortBy, sortOrder),
+  queryKey: ["products", page, sortBy, sortOrder,search,categoryId,brandId,limit],
+  queryFn: () => getProduct(page, limit, sortBy, sortOrder,search,categoryId,brandId),
 })
+    console.log(data)
 const router = useRouter()
 // values pass to columns.tsx to handle sorting and navigation on edit
 const columns = getColumns(
   (field) => {
     setSortBy(field)
     setSortOrder((p) => (p === "asc" ? "desc" : "asc"))
+      setPage(1)
   },
   sortBy,
   sortOrder,
@@ -44,9 +47,11 @@ const columns = getColumns(
 )
     return(
         <>
-        <div className="my-3">  <ProductHeader brandId={brandId} setBrandId={setBrandId} categoryId={categoryId} setCategoryId={setCategoryId} /></div>
+        <div className="my-3">
+            <ProductHeader brandId={brandId} setBrandId={setBrandId} categoryId={categoryId}
+                           setCategoryId={setCategoryId} search={search} setSearch={setSearch} /></div>
  
-   
+   <div  >
 <ProductTable
         columns={columns}
         data={data?.data ?? []}
@@ -54,7 +59,8 @@ const columns = getColumns(
         isLoading={isLoading}
         page={page}
         setPage={setPage}
-      />     
+        setLimit={setLimit}
+      /> </div>
          </>
     )
 }
